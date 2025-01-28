@@ -1,6 +1,29 @@
 import React, { useState } from 'react';
 
-const ExpenseForm = ({ onAddExpense }) => {
+// Definir categorías válidas
+const VALID_CATEGORIES = [
+  'alimentación',
+  'transporte',
+  'vivienda',
+  'servicios',
+  'educación',
+  'entretenimiento',
+  'salud',
+  'otros'
+];
+
+// Funciones de validación
+const isNumeric = (value, min = 0) => {
+  const number = parseFloat(value);
+  return !isNaN(number) && number >= min;
+};
+
+const isDate = (dateString) => {
+  const date = new Date(dateString);
+  return date instanceof Date && !isNaN(date);
+};
+
+export const ExpenseForm = ({ onAddExpense }) => {
   const [expenseData, setExpenseData] = useState({
     amount: '',
     category: '',
@@ -10,17 +33,6 @@ const ExpenseForm = ({ onAddExpense }) => {
 
   const [errors, setErrors] = useState({});
 
-  const categories = [
-    'alimentación', 
-    'transporte', 
-    'vivienda', 
-    'servicios', 
-    'educación', 
-    'entretenimiento', 
-    'salud', 
-    'otros'
-  ];
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setExpenseData(prev => ({
@@ -29,20 +41,22 @@ const ExpenseForm = ({ onAddExpense }) => {
     }));
   };
 
-  const validateForm = () => {
+  const validateExpenseForm = () => {
     const newErrors = {};
 
-    const amount = parseFloat(expenseData.amount);
-    if (isNaN(amount) || amount <= 0) {
-      newErrors.amount = 'Ingrese un monto válido y mayor a 0';
+    // Validar monto
+    if (!isNumeric(expenseData.amount, 0.01)) {
+      newErrors.amount = 'Monto debe ser un número mayor a 0';
     }
 
-    if (!expenseData.category) {
-      newErrors.category = 'Seleccione una categoría';
+    // Validar categoría
+    if (!VALID_CATEGORIES.includes(expenseData.category)) {
+      newErrors.category = 'Seleccione una categoría válida';
     }
 
-    if (!expenseData.date) {
-      newErrors.date = 'Seleccione una fecha';
+    // Validar fecha
+    if (!isDate(expenseData.date)) {
+      newErrors.date = 'Fecha inválida';
     }
 
     setErrors(newErrors);
@@ -52,15 +66,13 @@ const ExpenseForm = ({ onAddExpense }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (validateForm()) {
-      const formattedExpense = {
+    if (validateExpenseForm()) {
+      onAddExpense({
         amount: parseFloat(expenseData.amount),
         category: expenseData.category,
         description: expenseData.description,
         date: new Date(expenseData.date)
-      };
-
-      onAddExpense(formattedExpense);
+      });
 
       // Resetear formulario
       setExpenseData({
@@ -96,7 +108,7 @@ const ExpenseForm = ({ onAddExpense }) => {
           className={`w-full p-2 border rounded ${errors.category ? 'border-red-500' : ''}`}
         >
           <option value="">Seleccionar Categoría</option>
-          {categories.map(category => (
+          {VALID_CATEGORIES.map(category => (
             <option key={category} value={category}>
               {category.charAt(0).toUpperCase() + category.slice(1)}
             </option>
@@ -138,5 +150,3 @@ const ExpenseForm = ({ onAddExpense }) => {
     </form>
   );
 };
-
-export default ExpenseForm;

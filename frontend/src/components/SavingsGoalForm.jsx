@@ -1,8 +1,42 @@
 import React, { useState } from 'react';
 
-const SavingsGoalForm = ({ onAddGoal }) => {
+// Utilidad de validación
+const validateForm = {
+  isCurrency: (value) => {
+    const currencyRegex = /^\$?(\d{1,3}(,\d{3})*(\.\d{2})?|\d+(\.\d{2})?)$/;
+    return currencyRegex.test(value);
+  },
+  isNumeric: (value, min = null, max = null) => {
+    const num = parseFloat(value);
+    if (isNaN(num)) return false;
+    
+    if (min !== null && num < min) return false;
+    if (max !== null && num > max) return false;
+    
+    return true;
+  },
+  isDate: (dateString) => {
+    const date = new Date(dateString);
+    return date instanceof Date && !isNaN(date);
+  }
+};
+
+// Categorías válidas
+const VALID_CATEGORIES = [
+  'alimentación', 
+  'transporte', 
+  'vivienda', 
+  'servicios', 
+  'educación', 
+  'entretenimiento', 
+  'salud', 
+  'otros'
+];
+
+// Formulario de Ahorros
+export const SavingsGoalForm = ({ onAddGoal }) => {
   const [goalData, setGoalData] = useState({
-    name: '',
+    goalName: '',
     targetAmount: '',
     currentAmount: '',
     targetDate: ''
@@ -18,29 +52,33 @@ const SavingsGoalForm = ({ onAddGoal }) => {
     }));
   };
 
-  const validateForm = () => {
+  const validateGoalForm = () => {
     const newErrors = {};
 
-    if (!goalData.name.trim()) {
-      newErrors.name = 'El nombre del objetivo es requerido';
+    // Validar nombre del objetivo
+    if (!goalData.goalName.trim()) {
+      newErrors.goalName = 'Nombre del objetivo es requerido';
     }
 
+    // Validar monto objetivo
     const targetAmount = parseFloat(goalData.targetAmount);
-    if (isNaN(targetAmount) || targetAmount <= 0) {
-      newErrors.targetAmount = 'Ingrese un monto válido y mayor a 0';
+    if (!validateForm.isNumeric(targetAmount, 1)) {
+      newErrors.targetAmount = 'Monto objetivo debe ser un número mayor a 0';
     }
 
+    // Validar monto actual
     const currentAmount = parseFloat(goalData.currentAmount);
-    if (isNaN(currentAmount) || currentAmount < 0) {
-      newErrors.currentAmount = 'Ingrese un monto válido';
+    if (!validateForm.isNumeric(currentAmount, 0)) {
+      newErrors.currentAmount = 'Monto actual debe ser un número mayor o igual a 0';
     }
 
     if (currentAmount > targetAmount) {
-      newErrors.currentAmount = 'El monto actual no puede ser mayor al objetivo';
+      newErrors.currentAmount = 'Monto actual no puede ser mayor al monto objetivo';
     }
 
-    if (!goalData.targetDate) {
-      newErrors.targetDate = 'Seleccione una fecha objetivo';
+    // Validar fecha
+    if (!validateForm.isDate(goalData.targetDate)) {
+      newErrors.targetDate = 'Fecha objetivo inválida';
     }
 
     setErrors(newErrors);
@@ -50,19 +88,17 @@ const SavingsGoalForm = ({ onAddGoal }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (validateForm()) {
-      const formattedGoal = {
-        goalName: goalData.name,
+    if (validateGoalForm()) {
+      onAddGoal({
+        goalName: goalData.goalName,
         targetAmount: parseFloat(goalData.targetAmount),
         currentAmount: parseFloat(goalData.currentAmount),
         targetDate: new Date(goalData.targetDate)
-      };
-
-      onAddGoal(formattedGoal);
+      });
 
       // Resetear formulario
       setGoalData({
-        name: '',
+        goalName: '',
         targetAmount: '',
         currentAmount: '',
         targetDate: ''
@@ -76,13 +112,13 @@ const SavingsGoalForm = ({ onAddGoal }) => {
         <label className="block mb-2">Nombre del Objetivo</label>
         <input
           type="text"
-          name="name"
-          value={goalData.name}
+          name="goalName"
+          value={goalData.goalName}
           onChange={handleChange}
-          className={`w-full p-2 border rounded ${errors.name ? 'border-red-500' : ''}`}
+          className={`w-full p-2 border rounded ${errors.goalName ? 'border-red-500' : ''}`}
           placeholder="Ej. Vacaciones, Casa, Auto"
         />
-        {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+        {errors.goalName && <p className="text-red-500 text-sm mt-1">{errors.goalName}</p>}
       </div>
 
       <div>
@@ -132,5 +168,3 @@ const SavingsGoalForm = ({ onAddGoal }) => {
     </form>
   );
 };
-
-export default SavingsGoalForm;
