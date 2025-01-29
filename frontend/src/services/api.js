@@ -1,6 +1,7 @@
 // src/services/api.js
 import axios from 'axios';
 
+
 // Configuración base de axios
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:4000/api',
@@ -13,25 +14,21 @@ const api = axios.create({
 // Servicios de Ahorros
 export const savingsService = {
   // Obtener todos los ahorros
-  getAll: async (page = 1, limit = 10) => {
-    try {
-      const response = await api.get('/savings', { 
-        params: { page, limit } 
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error obteniendo ahorros:', error);
-      throw error;
-    }
-  },
-
-  // Crear nuevo ahorro
   create: async (savingData) => {
     try {
       const response = await api.post('/savings', savingData);
       return response.data;
     } catch (error) {
       console.error('Error creando ahorro:', error);
+      throw error;
+    }
+  },
+  getAll: async () => {
+    try {
+      const response = await api.get('/savings');
+      return response.data;
+    } catch (error) {
+      console.error('Error obteniendo ahorros:', error);
       throw error;
     }
   },
@@ -62,29 +59,21 @@ export const savingsService = {
 // Servicios de Gastos
 export const expensesService = {
   // Obtener todos los gastos
-  getAll: async (page = 1, limit = 10, filters = {}) => {
-    try {
-      const response = await api.get('/expenses', { 
-        params: { 
-          page, 
-          limit, 
-          ...filters 
-        } 
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error obteniendo gastos:', error);
-      throw error;
-    }
-  },
-
-  // Crear nuevo gasto
   create: async (expenseData) => {
     try {
       const response = await api.post('/expenses', expenseData);
       return response.data;
     } catch (error) {
       console.error('Error creando gasto:', error);
+      throw error;
+    }
+  },
+  getAll: async () => {
+    try {
+      const response = await api.get('/expenses');
+      return response.data;
+    } catch (error) {
+      console.error('Error obteniendo gastos:', error);
       throw error;
     }
   },
