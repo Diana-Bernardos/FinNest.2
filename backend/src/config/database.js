@@ -2,8 +2,6 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-
-// Configuración de conexión a MySQL
 const sequelize = new Sequelize(
   process.env.DB_NAME || 'family_budget_db', 
   process.env.DB_USER || 'root', 
@@ -14,45 +12,43 @@ const sequelize = new Sequelize(
     dialect: 'mysql',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     pool: {
-      max: 5,     // máximo de conexiones en el pool
-      min: 0,     // mínimo de conexiones en el pool
-      acquire: 30000,  // tiempo máximo de espera para obtener conexión
-      idle: 10000      // tiempo máximo de inactividad de una conexión
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
     },
     define: {
-      timestamps: true,   // añade campos createdAt y updatedAt
-      underscored: true,  // usa snake_case para nombres de columnas
-      paranoid: true      // permite soft deletes
+      timestamps: true,
+      underscored: true,
+      paranoid: true,
+      charset: 'utf8',
+      collate: 'utf8_general_ci'
     },
-    timezone: '-03:00'    // Zona horaria de Chile
+    timezone: '-03:00',
+    dialectOptions: {
+      dateStrings: true,
+      typeCast: true,
+      useUTC: false
+    }
   }
 );
 
-// Función para probar la conexión
-const testConnection = async () => {
+const initializeDatabase = async () => {
   try {
     await sequelize.authenticate();
     console.log('✅ Conexión a MySQL establecida exitosamente');
+    
+    if (process.env.NODE_ENV === 'development') {
+      await sequelize.sync({ alter: true });
+      console.log('✅ Modelos sincronizados con la base de datos');
+    }
   } catch (error) {
-    console.error('❌ No se pudo conectar a la base de datos:', error);
-    throw error;
-  }
-};
-
-// Función para sincronizar modelos
-const syncDatabase = async () => {
-  try {
-    // Sincronización segura: no elimina datos existentes
-    await sequelize.sync({ alter: true });
-    console.log('✅ Modelos sincronizados con la base de datos');
-  } catch (error) {
-    console.error('❌ Error sincronizando base de datos:', error);
+    console.error('❌ Error en la inicialización de la base de datos:', error);
     throw error;
   }
 };
 
 module.exports = {
   sequelize,
-  testConnection,
-  syncDatabase
+  initializeDatabase
 };

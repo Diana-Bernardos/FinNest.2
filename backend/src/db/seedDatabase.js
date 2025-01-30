@@ -1,92 +1,52 @@
-// src/db/seedDatabase.js
-const { sequelize } = require('../config/database');
-const Savings = require('../models/Savings');
-const Expenses = require('../models/Expenses');
+// src/scripts/seedDb.js
+const { Expenses } = require('../models/Expenses');
+const { Savings } = require('../models/Savings');
+const { sequelize } = require('./config/database');
 
 const seedDatabase = async () => {
   try {
-    // Sincronizar modelos (crear tablas si no existen)
-    await sequelize.sync({ force: true });
-    console.log('✅ Base de datos sincronizada');
+    console.log('🌱 Sembrando datos de prueba...');
 
-    // Datos de ejemplo para Ahorros
-    const savingsData = [
-      {
-        goalName: 'Vacaciones de Verano',
-        targetAmount: 500000,
-        currentAmount: 250000,
-        targetDate: new Date('2024-12-31'),
-        description: 'Ahorro para unas vacaciones familiares'
-      },
-      {
-        goalName: 'Fondo de Emergencia',
-        targetAmount: 1000000,
-        currentAmount: 500000,
-        targetDate: new Date('2024-06-30'),
-        description: 'Ahorro para imprevistos'
-      },
-      {
-        goalName: 'Nueva Computadora',
-        targetAmount: 250000,
-        currentAmount: 100000,
-        targetDate: new Date('2024-09-15'),
-        description: 'Ahorro para una computadora nueva'
-      }
-    ];
-
-    // Datos de ejemplo para Gastos
-    const expensesData = [
+    // Crear algunos gastos de ejemplo
+    await Expenses.bulkCreate([
       {
         amount: 50000,
         category: 'alimentación',
-        description: 'Compra de supermercado',
-        date: new Date('2024-02-15')
+        description: 'Compra supermercado',
+        date: new Date()
       },
       {
         amount: 30000,
         category: 'transporte',
-        description: 'Bencina y estacionamiento',
-        date: new Date('2024-02-20')
-      },
-      {
-        amount: 25000,
-        category: 'servicios',
-        description: 'Pago de luz y agua',
-        date: new Date('2024-02-25')
-      },
-      {
-        amount: 40000,
-        category: 'entretenimiento',
-        description: 'Salida familiar',
-        date: new Date('2024-03-01')
-      },
-      {
-        amount: 15000,
-        category: 'salud',
-        description: 'Medicamentos',
-        date: new Date('2024-03-05')
+        description: 'Gasolina',
+        date: new Date()
       }
-    ];
+    ]);
 
-    // Insertar datos de ejemplo
-    await Savings.bulkCreate(savingsData);
-    await Expenses.bulkCreate(expensesData);
+    // Crear algunas metas de ahorro de ejemplo
+    await Savings.bulkCreate([
+      {
+        goal_name: 'Vacaciones',
+        target_amount: 1000000,
+        current_amount: 250000,
+        target_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días en el futuro
+        description: 'Ahorro para vacaciones de verano'
+      },
+      {
+        goal_name: 'Fondo de emergencia',
+        target_amount: 2000000,
+        current_amount: 500000,
+        target_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 días en el futuro
+        description: 'Fondo para emergencias'
+      }
+    ]);
 
-    console.log('✅ Datos de ejemplo insertados correctamente');
+    console.log('✅ Datos de prueba creados');
+    process.exit(0);
   } catch (error) {
-    console.error('❌ Error al sembrar la base de datos:', error);
-    throw error;
-  } finally {
-    // Cerrar conexión
-    await sequelize.close();
+    console.error('❌ Error creando datos de prueba:', error);
+    process.exit(1);
   }
 };
 
-// Ejecutar seed si se llama directamente
-if (require.main === module) {
-  seedDatabase()
-    .then(() => console.log('Sembrado de base de datos completado'))
-    .catch(error => console.error('Error en sembrado:', error));
-}
-
-module.exports = seedDatabase;
+seedDatabase();

@@ -1,72 +1,117 @@
-// src/config/server.js
+// src/server.js
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const sequelize = require('./config/database');
-
+const { initializeDatabase } = require('./config/database');
 
 // Importar rutas
-const savingsRoutes = require('./routes/savingsRoutes');
 const expensesRoutes = require('./routes/expensesRoutes');
+const savingsRoutes = require('./routes/savingsRoutes');
 const analysisRoutes = require('./routes/analysisRoutes');
 
-// Importar middlewares
-const errorMiddleware = require('./middlewares/errorMiddleware');
+// Crear aplicación Express
+const app = express();
 
-const createServer = () => {
-  const app = express();
+// Middleware de seguridad
+app.use(helmet({
+  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false
+}));
 
-  // Middlewares de seguridad y parseo
-  app.use(helmet()); // Añade varios encabezados de seguridad HTTP
-  app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  }));
-  
-  // Middlewares de logging y parsing
-  app.use(morgan('combined')); // Logging de solicitudes
-  app.use(express.json()); // Parseo de JSON
-  app.use(express.urlencoded({ extended: true })); // Parseo de datos de formulario
+// Configuración de CORS
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 
-  // Rutas
-  app.use('/api/savings', savingsRoutes);
-  app.use('/api/expenses', expensesRoutes);
-  app.use('/api/analysis', analysisRoutes);
+// Middleware de logging
+app.use(morgan('dev'));
 
-  // Ruta de health check
-  app.get('/health', (req, res) => {
-    res.status(200).json({
-      status: 'OK',
-      database: sequelize.isDefined ? 'Connected' : 'Disconnected',
-      timestamp: new Date().toISOString()
-    });
-  });
+// Middleware para parsear JSON y form data
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-  // Middleware de manejo de errores
-  app.use(errorMiddleware.notFound);
-  app.use(errorMiddleware.errorHandler);
 
-  // Función para iniciar el servidor
-  const start = async (port = process.env.PORT || 4000) => {
-    try {
-      // Sincronizar modelos con la base de datos
-      await sequelize.sync({ alter: true });
-      console.log('✅ Modelos sincronizados con la base de datos');
-
-      const server = app.listen(port, () => {
-        console.log(`🚀 Servidor corriendo en puerto ${port}`);
-      });
-
-      return server;
-    } catch (error) {
-      console.error('❌ Error al iniciar el servidor:', error);
-      process.exit(1);
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Bienvenido a la API de FinNest',
+    version: '1.0.0',
+    endpoints: {
+      expenses: '/api/expenses',
+      savings: '/api/savings',
+      analysis: '/api/analysis'
     }
-  };
+  });
+});
 
-  return { app, start };
+
+
+
+// Rutas de la API
+app.use('/api/expenses', expensesRoutes);
+app.use('/api/savings', savingsRoutes);
+app.use('/api/analysis', analysisRoutes);
+
+// Ruta de health check
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Manejador de rutas no encontradas
+app.use((req, res) => {
+  res.status(404).json({
+    status: 'error',
+    message: `Ruta no encontrada: ${req.originalUrl}`
+  });
+});
+
+// Manejador de errores global
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+
+  if (err.name === 'SequelizeValidationError') {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Error de validación',
+      errors: err.errors.map(e => ({
+        field: e.path,
+        message: e.message
+      }))
+    });
+  }
+
+  res.status(err.status || 500).json({
+    status: 'error',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Error interno del servidor'
+  });
+});
+
+// Función para iniciar el servidor
+const startServer = async (port = process.env.PORT || 3000) => {
+  try {
+    await initializeDatabase();
+    
+    const server = app.listen(port, () => {
+      console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
+      console.log(`📝 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    });
+
+    return server;
+  } catch (error) {
+    console.error('❌ Error al iniciar el servidor:', error);
+    process.exit(1);
+  }
 };
 
-module.exports = createServer;
+// Si el archivo es ejecutado directamente
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = { app, startServer };

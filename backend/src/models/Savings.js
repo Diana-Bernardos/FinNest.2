@@ -1,33 +1,21 @@
 // src/models/Savings.js
-const { DataTypes, Model } = require('sequelize');
+const { Model, DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
-
 class Savings extends Model {
-  // Método para calcular el progreso del ahorro
-  calculateProgress() {
-    return this.currentAmount && this.targetAmount 
-      ? Math.round((this.currentAmount / this.targetAmount) * 100) 
-      : 0;
+  getProgress() {
+    return this.current_amount ? (this.current_amount / this.target_amount * 100).toFixed(2) : 0;
   }
 
-  // Método para determinar el estado del ahorro
-  determineStatus() {
-    const progress = this.calculateProgress();
-    const daysRemaining = this.calculateDaysRemaining();
-
-    if (progress >= 100) return 'completed';
-    if (daysRemaining < 0) return 'failed';
-    return 'in_progress';
-  }
-
-  // Calcular días restantes para la meta
-  calculateDaysRemaining() {
-    if (!this.targetDate) return 0;
+  getStatus() {
+    const progress = this.getProgress();
+    if (progress >= 100) return 'completado';
+    
     const today = new Date();
-    const targetDate = new Date(this.targetDate);
-    const timeDiff = targetDate.getTime() - today.getTime();
-    return Math.ceil(timeDiff / (1000 * 3600 * 24));
+    const targetDate = new Date(this.target_date);
+    
+    if (today > targetDate) return 'vencido';
+    return 'en_progreso';
   }
 }
 
@@ -37,55 +25,46 @@ Savings.init({
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  goalName: {
+  goal_name: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
       notEmpty: {
-        msg: 'El nombre del objetivo no puede estar vacío'
-      },
-      len: {
-        args: [2, 100],
-        msg: 'El nombre del objetivo debe tener entre 2 y 100 caracteres'
+        msg: 'El nombre del objetivo es requerido'
       }
     }
   },
-  targetAmount: {
+  target_amount: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false,
     validate: {
       min: {
         args: [0],
         msg: 'El monto objetivo debe ser mayor que 0'
-      },
-      isNumeric: {
-        msg: 'El monto objetivo debe ser un número'
       }
     }
   },
-  currentAmount: {
+  current_amount: {
     type: DataTypes.DECIMAL(10, 2),
     defaultValue: 0,
     validate: {
       min: {
         args: [0],
         msg: 'El monto actual no puede ser negativo'
-      },
-      isNumeric: {
-        msg: 'El monto actual debe ser un número'
       }
     }
   },
-  targetDate: {
+  target_date: {
     type: DataTypes.DATE,
     allowNull: false,
     validate: {
       isDate: {
-        msg: 'Debe ser una fecha válida'
+        msg: 'La fecha objetivo debe ser válida'
       },
-      isAfter: {
-        args: [new Date().toISOString().split('T')[0]],
-        msg: 'La fecha objetivo debe ser en el futuro'
+      isFuture(value) {
+        if (new Date(value) <= new Date()) {
+          throw new Error('La fecha objetivo debe ser en el futuro');
+        }
       }
     }
   },
@@ -98,18 +77,6 @@ Savings.init({
         msg: 'La descripción no puede exceder 500 caracteres'
       }
     }
-  },
-  status: {
-    type: DataTypes.VIRTUAL,
-    get() {
-      return this.determineStatus();
-    }
-  },
-  progress: {
-    type: DataTypes.VIRTUAL,
-    get() {
-      return this.calculateProgress();
-    }
   }
 }, {
   sequelize,
@@ -117,14 +84,17 @@ Savings.init({
   tableName: 'savings',
   timestamps: true,
   paranoid: true,
+  underscored: true,
   hooks: {
-    beforeValidate: (savings) => {
-      // Asegurar que el monto actual no supere el monto objetivo
-      if (savings.currentAmount > savings.targetAmount) {
-        savings.currentAmount = savings.targetAmount;
+    beforeValidate: (saving) => {
+      if (saving.goal_name) {
+        saving.goal_name = saving.goal_name.trim();
+      }
+      if (saving.description) {
+        saving.description = saving.description.trim();
       }
     }
   }
 });
 
-module.exports = Savings;
+module.exports = { Savings };

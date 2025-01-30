@@ -102,29 +102,39 @@ router.get('/:id',
 );
 
 // Crear nuevo gasto
-router.post('/', 
-  validate([
-    body('amount').isFloat({ min: 0.01 }).withMessage('Monto debe ser un número positivo'),
-    body('category').isIn(VALID_CATEGORIES).withMessage('Categoría inválida'),
-    body('description').optional().isString().withMessage('Descripción debe ser texto'),
-    body('date').optional().isISO8601().toDate().withMessage('Fecha inválida')
-  ]),
-  async (req, res) => {
-    try {
-      const newExpense = await Expenses.create({
-        amount: req.body.amount,
-        category: req.body.category,
-        description: req.body.description || null,
-        date: req.body.date || new Date()
+router.post('/', async (req, res) => {
+  try {
+    const { amount, category, description, date } = req.body;
+
+    // Validar los datos recibidos
+    if (!amount || !category) {
+      return res.status(400).json({
+        message: 'El monto y la categoría son requeridos'
       });
-
-      res.status(201).json(newExpense);
-    } catch (error) {
-      res.status(400).json({ message: 'Error al crear gasto', error: error.message });
     }
-  }
-);
 
+    // Crear el nuevo gasto
+    const newExpense = await Expenses.create({
+      amount,
+      category,
+      description: description || null,
+      date: date || new Date()
+    });
+
+    // Responder con el gasto creado
+    res.status(201).json({
+      message: 'Gasto creado exitosamente',
+      expense: newExpense
+    });
+
+  } catch (error) {
+    console.error('Error al crear gasto:', error);
+    res.status(500).json({
+      message: 'Error al crear el gasto',
+      error: error.message
+    });
+  }
+});
 // Actualizar gasto
 router.put('/:id', 
   validate([
