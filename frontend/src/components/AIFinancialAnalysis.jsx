@@ -53,8 +53,16 @@ const AIFinancialAnalysis = ({ expenses, savings }) => {
           .replace(/```json|```/g, '') // Eliminar las etiquetas de código Markdown
           .trim(); // Eliminar espacios y saltos innecesarios
 
-        // Parsear el JSON limpio
-        const jsonData = JSON.parse(cleanJson);
+        // Verificar si el JSON está completo y corregirlo si es necesario
+        let jsonData;
+        try {
+          jsonData = JSON.parse(cleanJson);
+        } catch (parseError) {
+          // Si el JSON no es válido, intentar corregirlo agregando la llave de cierre
+          const fixedJson = cleanJson.endsWith('}') ? cleanJson : `${cleanJson}}`;
+          jsonData = JSON.parse(fixedJson);
+        }
+
         setAiInsights(jsonData);
       } catch (jsonError) {
         throw new Error(`Error al parsear JSON: ${jsonError.message}`);
