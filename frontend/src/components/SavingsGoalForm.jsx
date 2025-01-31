@@ -1,109 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { savingsService } from '../services/api';
 
-// Utilidad de validación
-const validateForm = {
-  isCurrency: (value) => {
-    const currencyRegex = /^\$?(\d{1,3}(,\d{3})*(\.\d{2})?|\d+(\.\d{2})?)$/;
-    return currencyRegex.test(value);
-  },
-  isNumeric: (value, min = null, max = null) => {
-    const num = parseFloat(value);
-    if (isNaN(num)) return false;
-    
-    if (min !== null && num < min) return false;
-    if (max !== null && num > max) return false;
-    
-    return true;
-  },
-  isDate: (dateString) => {
-    const date = new Date(dateString);
-    return date instanceof Date && !isNaN(date);
-  }
-};
-
-// Categorías válidas
-const VALID_CATEGORIES = [
-  'alimentación', 
-  'transporte', 
-  'vivienda', 
-  'servicios', 
-  'educación', 
-  'entretenimiento', 
-  'salud', 
-  'otros'
-];
-
-// Formulario de Ahorros
-export const SavingsGoalForm = ({ onAddGoal }) => {
+const SavingsGoalForm = ({ onSaveGoal }) => {
   const [goalData, setGoalData] = useState({
-    goalName: '',
-    targetAmount: '',
-    currentAmount: '',
-    targetDate: ''
+    goalName: "",
+    targetAmount: "",
+    currentAmount: "",
+    targetDate: "",
   });
-
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setGoalData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setGoalData({ ...goalData, [name]: value });
   };
 
-  const validateGoalForm = () => {
-    const newErrors = {};
-
-    // Validar nombre del objetivo
-    if (!goalData.goalName.trim()) {
-      newErrors.goalName = 'Nombre del objetivo es requerido';
-    }
-
-    // Validar monto objetivo
+  const validateForm = () => {
+    let newErrors = {};
     const targetAmount = parseFloat(goalData.targetAmount);
-    if (!validateForm.isNumeric(targetAmount, 1)) {
-      newErrors.targetAmount = 'Monto objetivo debe ser un número mayor a 0';
-    }
-
-    // Validar monto actual
     const currentAmount = parseFloat(goalData.currentAmount);
-    if (!validateForm.isNumeric(currentAmount, 0)) {
-      newErrors.currentAmount = 'Monto actual debe ser un número mayor o igual a 0';
+
+    if (!goalData.goalName) newErrors.goalName = "El nombre del objetivo es obligatorio.";
+    if (!goalData.targetAmount) newErrors.targetAmount = "El monto objetivo es obligatorio.";
+    if (!goalData.currentAmount) newErrors.currentAmount = "El monto actual es obligatorio.";
+    if (!goalData.targetDate) newErrors.targetDate = "La fecha objetivo es obligatoria.";
+
+    if (isNaN(targetAmount) || targetAmount <= 0) {
+      newErrors.targetAmount = "El monto objetivo debe ser un número mayor que cero.";
     }
 
-    if (currentAmount > targetAmount) {
-      newErrors.currentAmount = 'Monto actual no puede ser mayor al monto objetivo';
+    if (isNaN(currentAmount) || currentAmount < 0) {
+      newErrors.currentAmount = "El monto actual debe ser un número mayor o igual a cero.";
     }
 
-    // Validar fecha
-    if (!validateForm.isDate(goalData.targetDate)) {
-      newErrors.targetDate = 'Fecha objetivo inválida';
+    if (!isNaN(targetAmount) && !isNaN(currentAmount) && currentAmount > targetAmount) {
+      newErrors.currentAmount = "El monto actual no puede ser mayor que el monto objetivo.";
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    if (validateGoalForm()) {
-      onAddGoal({
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+    if (typeof onSaveGoal === "function") {
+      onSaveGoal({
         goalName: goalData.goalName,
         targetAmount: parseFloat(goalData.targetAmount),
         currentAmount: parseFloat(goalData.currentAmount),
-        targetDate: new Date(goalData.targetDate)
+        targetDate: goalData.targetDate,
       });
-
-      // Resetear formulario
-      setGoalData({
-        goalName: '',
-        targetAmount: '',
-        currentAmount: '',
-        targetDate: ''
-      });
+    } else {
+      console.error("onSaveGoal no está definido o no es una función.");
     }
+  
+    setGoalData({ goalName: "", targetAmount: "", currentAmount: "", targetDate: "" });
+    setErrors({});
   };
 
   return (
@@ -168,3 +124,5 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
     </form>
   );
 };
+
+export default SavingsGoalForm;

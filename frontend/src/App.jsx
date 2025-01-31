@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ExpenseForm } from './components/ExpenseForm';
-import { SavingsGoalForm } from './components/SavingsGoalForm';
+import SavingsGoalForm from './components/SavingsGoalForm';
+import { v4 as uuidv4 } from 'uuid';
+
 import AIFinancialAnalysis from './components/AIFinancialAnalysis';
 
 // Páginas con lógica implementada
@@ -42,7 +44,7 @@ const SavingsPage = ({ savings, onAddGoal }) => {
       <h1 className="text-4xl font-bold text-gray-800 mb-6">Ahorros</h1>
       <div className="bg-white rounded-2xl shadow-lg p-6">
         <h2 className="text-2xl font-semibold mb-4">Nueva Meta de Ahorro</h2>
-        <SavingsGoalForm onAddGoal={onAddGoal} />
+        <SavingsGoalForm onSaveGoal={onAddGoal} />
       </div>
       <div className="bg-white rounded-2xl shadow-lg p-6">
         <h2 className="text-2xl font-semibold mb-4">Metas Actuales</h2>
@@ -214,7 +216,7 @@ const Icons = {
 const App = () => {
   const [activeSection, setActiveSection] = useState('overview');
   const [expenses, setExpenses] = useState([]);
-  const [savings, setSavings] = useState([]);
+  const [savingsGoals, setSavingsGoals] = useState([]);
 
   // Manejadores de eventos
   const handleAddExpense = (expenseData) => {
@@ -226,14 +228,11 @@ const App = () => {
     setExpenses([...expenses, newExpense]);
   };
 
-  const handleAddSavingsGoal = (savingsData) => {
-    const newSavingsGoal = {
-      ...savingsData,
-      id: Date.now().toString(),
-      currentAmount: 0
-    };
-    setSavings([...savings, newSavingsGoal]);
-  };
+  const handleSaveGoal = (newGoal) => {
+    const goalWithId = { ...newGoal, id: uuidv4() }; // Add a unique ID
+  setSavingsGoals((prevGoals) => [...prevGoals, goalWithId]);
+  console.log("Nueva meta de ahorro agregada:", goalWithId);
+};
 
   const sections = [
     { 
@@ -241,14 +240,14 @@ const App = () => {
       icon: Icons.Home, 
       title: 'Resumen', 
       color: 'bg-gradient-to-r from-blue-500 to-teal-400',
-      component: () => <OverviewPage expenses={expenses} savings={savings} />
+      component: () => <OverviewPage expenses={expenses} savings={savingsGoals} />
     },
     { 
       id: 'savings', 
       icon: Icons.Savings, 
       title: 'Ahorros', 
       color: 'bg-gradient-to-r from-green-400 to-emerald-500',
-      component: () => <SavingsPage savings={savings} onAddGoal={handleAddSavingsGoal} />
+      component: () => <SavingsPage savings={savingsGoals} onAddGoal={handleSaveGoal} />
     },
     { 
       id: 'expenses', 
@@ -262,7 +261,7 @@ const App = () => {
       icon: Icons.Analysis, 
       title: 'Análisis', 
       color: 'bg-gradient-to-r from-purple-500 to-indigo-600',
-      component: () => <AnalysisPage expenses={expenses} savings={savings} />
+      component: () => <AnalysisPage expenses={expenses} savings={savingsGoals} />
     },
     { 
       id: 'settings', 
