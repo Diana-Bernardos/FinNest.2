@@ -5,7 +5,6 @@ const AIFinancialAnalysis = ({ expenses, savings }) => {
   const [aiInsights, setAiInsights] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [rawResponse, setRawResponse] = useState(null); // Para depuración
 
   const fetchAIAnalysis = async () => {
     if (expenses.length === 0 || savings.length === 0) {
@@ -16,16 +15,13 @@ const AIFinancialAnalysis = ({ expenses, savings }) => {
     setIsLoading(true);
     setError(null);
     setAiInsights(null);
-    setRawResponse(null);
 
     try {
       const response = await axios.post('http://localhost:11434/api/generate', {
         model: "llama3.2:3b-instruct-q8_0",
         prompt: `Actúa como un analista financiero experto y proporciona un análisis en formato JSON.
-
         Gastos: ${JSON.stringify(expenses, null, 2)}
         Ahorros: ${JSON.stringify(savings, null, 2)}
-
         Responde exclusivamente en este formato JSON sin añadir texto antes o después:
         {
           "gastosTotales": número,
@@ -44,29 +40,11 @@ const AIFinancialAnalysis = ({ expenses, savings }) => {
       }
 
       const aiText = response.data.response.trim();
-      console.log("Respuesta de la IA:", aiText);
-      setRawResponse(aiText);
-
-      try {
-        // Eliminar los delimitadores Markdown de la respuesta
-        const cleanJson = aiText
-          .replace(/```json|```/g, '') // Eliminar las etiquetas de código Markdown
-          .trim(); // Eliminar espacios y saltos innecesarios
-
-        // Verificar si el JSON está completo y corregirlo si es necesario
-        let jsonData;
-        try {
-          jsonData = JSON.parse(cleanJson);
-        } catch (parseError) {
-          // Si el JSON no es válido, intentar corregirlo agregando la llave de cierre
-          const fixedJson = cleanJson.endsWith('}') ? cleanJson : `${cleanJson}}`;
-          jsonData = JSON.parse(fixedJson);
-        }
-
-        setAiInsights(jsonData);
-      } catch (jsonError) {
-        throw new Error(`Error al parsear JSON: ${jsonError.message}`);
-      }
+      
+      const cleanJson = aiText.replace(/```json|```/g, '').trim();
+      const jsonData = JSON.parse(cleanJson);
+      
+      setAiInsights(extractRelevantData(jsonData));
     } catch (error) {
       console.error("Error al obtener análisis de la IA:", error);
       setError(error.message);
@@ -75,45 +53,84 @@ const AIFinancialAnalysis = ({ expenses, savings }) => {
     }
   };
 
+  const extractRelevantData = (jsonData) => ({
+    gastosTotales: jsonData.gastosTotales || 0,
+    ahorrosTotales: jsonData.ahorrosTotales || 0,
+    analisisGastos: jsonData.analisisGastos || "Sin análisis disponible",
+    progresoAhorros: jsonData.progresoAhorros || "Sin progreso disponible",
+    recomendaciones: jsonData.recomendaciones || ["Sin recomendaciones disponibles"],
+    categoriasMayorGasto: jsonData.categoriasMayorGasto || ["Sin categorías disponibles"],
+    potencialAhorro: jsonData.potencialAhorro || 0
+  });
+
   return (
-    <div>
-      <h2>Análisis Financiero con IA</h2>
-      <button onClick={fetchAIAnalysis} disabled={isLoading}>
+    <div className="space-y-4">
+      <button
+        onClick={fetchAIAnalysis}
+        disabled={isLoading}
+        className={`w-full py-2 px-4 rounded-lg text-white transition-colors ${
+          isLoading
+            ? 'bg-gray-400 cursor-not-allowed'
+            : 'bg-blue-600 hover:bg-blue-700'
+        }`}
+      >
         {isLoading ? "Analizando..." : "Obtener Análisis"}
       </button>
 
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-
-      {rawResponse && (
-        <div>
-          <h3>Respuesta sin procesar:</h3>
-          <pre>{rawResponse}</pre>
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          {error}
         </div>
       )}
 
       {aiInsights && (
-        <div>
-          <h3>Resultados del Análisis</h3>
-          <p><strong>Gastos Totales:</strong> ${aiInsights.gastosTotales}</p>
-          <p><strong>Ahorros Totales:</strong> ${aiInsights.ahorrosTotales}</p>
-          <p><strong>Análisis:</strong> {aiInsights.analisisGastos}</p>
-          <p><strong>Progreso en Ahorros:</strong> {aiInsights.progresoAhorros}</p>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-600 font-medium">Gastos Totales</p>
+              <p className="text-lg font-bold">${aiInsights.gastosTotales.toLocaleString()}</p>
+            </div>
+            <div className="p-3 bg-green-50 rounded-lg">
+              <p className="text-sm text-green-600 font-medium">Ahorros Totales</p>
+              <p className="text-lg font-bold">${aiInsights.ahorrosTotales.toLocaleString()}</p>
+            </div>
+          </div>
 
-          <h4>Recomendaciones</h4>
-          <ul>
-            {aiInsights.recomendaciones.map((item, index) => (
-              <li key={index}>{item}</li>
-            ))}
-          </ul>
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-medium mb-2">Análisis de Gastos</h4>
+            <p className="text-gray-700">{aiInsights.analisisGastos}</p>
+          </div>
 
-          <h4>Categorías de Mayor Gasto</h4>
-          <ul>
-            {aiInsights.categoriasMayorGasto.map((item, index) => (
-              <li key={index}>{item}</li>
-            ))}
-          </ul>
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-medium mb-2">Progreso en Ahorros</h4>
+            <p className="text-gray-700">{aiInsights.progresoAhorros}</p>
+          </div>
 
-          <p><strong>Potencial de Ahorro:</strong> ${aiInsights.potencialAhorro}</p>
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-medium mb-2">Recomendaciones</h4>
+            <ul className="list-disc list-inside space-y-1">
+              {aiInsights.recomendaciones.map((item, index) => (
+                <li key={index} className="text-gray-700">{item}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-medium mb-2">Categorías de Mayor Gasto</h4>
+              <ul className="list-disc list-inside space-y-1">
+                {aiInsights.categoriasMayorGasto.map((item, index) => (
+                  <li key={index} className="text-gray-700">{item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <h4 className="font-medium mb-2">Potencial de Ahorro</h4>
+              <p className="text-2xl font-bold text-green-600">
+                ${aiInsights.potencialAhorro.toLocaleString()}
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>

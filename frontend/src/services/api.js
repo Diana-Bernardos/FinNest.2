@@ -1,7 +1,6 @@
 // src/services/api.js
 import axios from 'axios';
 
-
 // Configuración base de axios
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001/api',
@@ -13,38 +12,57 @@ const api = axios.create({
 
 // Servicios de Ahorros
 export const savingsService = {
-  // Obtener todos los ahorros
   create: async (savingData) => {
     try {
-      const response = await api.post('/savings', savingData);
+      // Asegurarse de que la fecha sea válida antes de convertirla
+      const targetDate = new Date(savingData.target_date);
+      if (isNaN(targetDate.getTime())) {
+        throw new Error('Fecha inválida');
+      }
+      const data = {
+        goal_name: String(savingData.goal_name).trim(),
+        target_amount: Number(savingData.target_amount),
+        current_amount: Number(savingData.current_amount || 0),
+        target_date: targetDate.toISOString().split('T')[0] // Solo la fecha, sin hora
+      };
+      console.log('Sending data to server:', data);
+      const response = await api.post('/savings', data);
       return response.data;
     } catch (error) {
-      console.error('Error creando ahorro:', error);
+      console.error('Error creating saving:', {
+        originalData: savingData,
+        error: error.message,
+        response: error.response?.data
+      });
       throw error;
     }
   },
   getAll: async () => {
     try {
       const response = await api.get('/savings');
-      return response.data;
+      // Asegurar que siempre devolvemos un array
+      return response.data.savings || [];
     } catch (error) {
-      console.error('Error obteniendo ahorros:', error);
-      throw error;
+      console.error('Error fetching savings:', error);
+      return []; // Retornar array vacío en caso de error
     }
-  },
-
-  // Actualizar ahorro
+  }, // Coma aquí
   update: async (id, updateData) => {
     try {
-      const response = await api.put(`/savings/${id}`, updateData);
+      // Transform update data to match backend expectations
+      const transformedData = {
+        goalName: updateData.goalName,
+        targetAmount: updateData.targetAmount,
+        currentAmount: updateData.currentAmount,
+        targetDate: updateData.targetDate
+      };
+      const response = await api.put(`/savings/${id}`, transformedData);
       return response.data;
     } catch (error) {
       console.error('Error actualizando ahorro:', error);
       throw error;
     }
-  },
-
-  // Eliminar ahorro
+  }, // Coma aquí
   delete: async (id) => {
     try {
       const response = await api.delete(`/savings/${id}`);
@@ -71,13 +89,12 @@ export const expensesService = {
   getAll: async () => {
     try {
       const response = await api.get('/expenses');
-      return response.data;
+      return Array.isArray(response.data) ? response.data : []; // Garantizar que siempre sea un array
     } catch (error) {
       console.error('Error obteniendo gastos:', error);
-      throw error;
+      return []; // Retornar array vacío en caso de error
     }
   },
-
   // Actualizar gasto
   update: async (id, updateData) => {
     try {
@@ -88,7 +105,6 @@ export const expensesService = {
       throw error;
     }
   },
-
   // Eliminar gasto
   delete: async (id) => {
     try {
@@ -113,7 +129,6 @@ export const analysisService = {
       throw error;
     }
   },
-
   // Obtener análisis por categoría
   getCategoryBreakdown: async () => {
     try {

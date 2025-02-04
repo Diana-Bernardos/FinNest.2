@@ -1,117 +1,77 @@
 import React, { useState } from 'react';
-import { expensesService } from '../services/api';
 
 const VALID_CATEGORIES = [
-  'alimentación',
+  'alimentacion',
   'transporte',
   'vivienda',
   'servicios',
-  'educación',
   'entretenimiento',
   'salud',
   'otros'
 ];
 
-const isNumeric = (value, min = 0) => {
-  const number = parseFloat(value);
-  return !isNaN(number) && number >= min;
-};
-
-const isDate = (dateString) => {
-  const date = new Date(dateString);
-  return date instanceof Date && !isNaN(date);
-};
-
-export const ExpenseForm = ({ onAddExpense, onError }) => {
-  const [expenseData, setExpenseData] = useState({
+const ExpenseForm = ({ onAddExpense }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({
     amount: '',
     category: '',
     description: '',
     date: new Date().toISOString().split('T')[0]
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState({});
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setExpenseData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    // Limpiar error del campo cuando cambia
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
-    }
-  };
-
-  const validateExpenseForm = () => {
+  const validateForm = () => {
     const newErrors = {};
 
-    if (!isNumeric(expenseData.amount, 0.01)) {
-      newErrors.amount = 'El monto debe ser mayor a 0';
+    if (!formData.amount || isNaN(Number(formData.amount)) || Number(formData.amount) <= 0) {
+      newErrors.amount = 'Ingrese un monto válido mayor a 0';
     }
 
-    if (!VALID_CATEGORIES.includes(expenseData.category)) {
+    if (!formData.category || !VALID_CATEGORIES.includes(formData.category)) {
       newErrors.category = 'Seleccione una categoría válida';
     }
 
-    if (!isDate(expenseData.date)) {
-      newErrors.date = 'Fecha inválida';
-    } else {
-      const selectedDate = new Date(expenseData.date);
-      const today = new Date();
-      if (selectedDate > today) {
-        newErrors.date = 'La fecha no puede ser futura';
-      }
+    if (!formData.date || isNaN(new Date(formData.date).getTime())) {
+      newErrors.date = 'Ingrese una fecha válida';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (validateExpenseForm()) {
-      setIsSubmitting(true);
-      try {
-        const expenseToSave = {
-          amount: parseFloat(expenseData.amount),
-          category: expenseData.category.toLowerCase(),
-          description: expenseData.description.trim() || null,
-          date: new Date(expenseData.date).toISOString()
-        };
+    if (!validateForm()) return;
 
-        console.log('Enviando gasto:', expenseToSave);
-        const response = await expensesService.create(expenseToSave);
-        console.log('Respuesta:', response);
-
-        if (onAddExpense) {
-          onAddExpense(response.expense);
-        }
-
-        // Resetear formulario
-        setExpenseData({
-          amount: '',
-          category: '',
-          description: '',
-          date: new Date().toISOString().split('T')[0]
-        });
-        setErrors({});
-        
-      } catch (error) {
-        console.error('Error al crear gasto:', error);
-        setErrors(prev => ({
-          ...prev,
-          submit: error.response?.data?.message || 'Error al guardar el gasto'
-        }));
-        if (onError) {
-          onError(error);
-        }
-      } finally {
-        setIsSubmitting(false);
-      }
+    setIsSubmitting(true);
+    try {
+      await onAddExpense({
+        ...formData,
+        amount: Number(formData.amount)
+      });
+      
+      setFormData({
+        amount: '',
+        category: '',
+        description: '',
+        date: new Date().toISOString().split('T')[0]
+      });
+      setErrors({});
+    } catch (error) {
+      setErrors(prev => ({ 
+        ...prev, 
+        submit: 'Error al guardar el gasto. Intente nuevamente.' 
+      }));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -128,7 +88,7 @@ export const ExpenseForm = ({ onAddExpense, onError }) => {
         <input
           type="number"
           name="amount"
-          value={expenseData.amount}
+          value={formData.amount}
           onChange={handleChange}
           step="0.01"
           min="0"
@@ -147,7 +107,7 @@ export const ExpenseForm = ({ onAddExpense, onError }) => {
         <label className="block mb-2 font-medium text-gray-700">Categoría</label>
         <select
           name="category"
-          value={expenseData.category}
+          value={formData.category}
           onChange={handleChange}
           className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
             errors.category ? 'border-red-500' : 'border-gray-300'
@@ -155,7 +115,7 @@ export const ExpenseForm = ({ onAddExpense, onError }) => {
           disabled={isSubmitting}
         >
           <option value="">Seleccionar Categoría</option>
-          {VALID_CATEGORIES.map(category => (
+          {VALID_CATEGORIES.map((category) => (
             <option key={category} value={category}>
               {category.charAt(0).toUpperCase() + category.slice(1)}
             </option>
@@ -173,7 +133,7 @@ export const ExpenseForm = ({ onAddExpense, onError }) => {
         <input
           type="text"
           name="description"
-          value={expenseData.description}
+          value={formData.description}
           onChange={handleChange}
           className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           placeholder="Detalles del gasto"
@@ -186,7 +146,7 @@ export const ExpenseForm = ({ onAddExpense, onError }) => {
         <input
           type="date"
           name="date"
-          value={expenseData.date}
+          value={formData.date}
           onChange={handleChange}
           className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
             errors.date ? 'border-red-500' : 'border-gray-300'
@@ -198,7 +158,7 @@ export const ExpenseForm = ({ onAddExpense, onError }) => {
         )}
       </div>
 
-      <button 
+      <button
         type="submit"
         disabled={isSubmitting}
         className={`w-full p-3 text-white rounded-lg transition-colors ${

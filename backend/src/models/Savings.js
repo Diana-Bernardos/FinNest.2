@@ -4,16 +4,14 @@ const { sequelize } = require('../config/database');
 
 class Savings extends Model {
   getProgress() {
-    return this.current_amount ? (this.current_amount / this.target_amount * 100).toFixed(2) : 0;
+    return this.currentAmount ? (this.currentAmount / this.targetAmount * 100).toFixed(2) : 0;
   }
 
   getStatus() {
     const progress = this.getProgress();
     if (progress >= 100) return 'completado';
-    
     const today = new Date();
-    const targetDate = new Date(this.target_date);
-    
+    const targetDate = new Date(this.targetDate);
     if (today > targetDate) return 'vencido';
     return 'en_progreso';
   }
@@ -40,7 +38,7 @@ Savings.init({
     validate: {
       min: {
         args: [0],
-        msg: 'El monto objetivo debe ser mayor que 0'
+        msg: 'El monto objetivo debe ser mayor a 0'
       }
     }
   },
@@ -55,26 +53,14 @@ Savings.init({
     }
   },
   target_date: {
-    type: DataTypes.DATE,
+    type: DataTypes.DATEONLY,  // Cambiado a DATEONLY
     allowNull: false,
     validate: {
-      isDate: {
-        msg: 'La fecha objetivo debe ser válida'
-      },
-      isFuture(value) {
+      isDate: true,
+      isAfterToday(value) {
         if (new Date(value) <= new Date()) {
-          throw new Error('La fecha objetivo debe ser en el futuro');
+          throw new Error('La fecha objetivo debe ser posterior a hoy');
         }
-      }
-    }
-  },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-    validate: {
-      len: {
-        args: [0, 500],
-        msg: 'La descripción no puede exceder 500 caracteres'
       }
     }
   }
@@ -83,18 +69,8 @@ Savings.init({
   modelName: 'Savings',
   tableName: 'savings',
   timestamps: true,
-  paranoid: true,
   underscored: true,
-  hooks: {
-    beforeValidate: (saving) => {
-      if (saving.goal_name) {
-        saving.goal_name = saving.goal_name.trim();
-      }
-      if (saving.description) {
-        saving.description = saving.description.trim();
-      }
-    }
-  }
+  paranoid: true
 });
 
 module.exports = { Savings };
