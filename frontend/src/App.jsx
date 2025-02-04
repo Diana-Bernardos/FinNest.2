@@ -54,11 +54,11 @@ const OverviewPage = ({ expenses = [], savings = [] }) => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
         <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white p-3 rounded-lg shadow-sm">
           <h3 className="text-sm font-medium">Gastos Mensuales</h3>
-          <p className="text-lg font-bold mt-1">${monthlyExpenses.toLocaleString()}</p>
+          <p className="text-lg font-bold mt-1">{monthlyExpenses.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</p>
         </div>
         <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-3 rounded-lg shadow-sm">
           <h3 className="text-sm font-medium">Total Ahorrado</h3>
-          <p className="text-lg font-bold mt-1">${totalSavings.toLocaleString()}</p>
+          <p className="text-lg font-bold mt-1">{totalSavings.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</p>
         </div>
 
         <div className="col-span-3">

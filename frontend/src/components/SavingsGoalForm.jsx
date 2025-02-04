@@ -12,6 +12,14 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const formatCurrency = (value) => {
+    if (!value) return '';
+    return new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(value);
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setGoalData(prev => ({
@@ -29,12 +37,10 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
   const validateGoalForm = () => {
     const newErrors = {};
 
-    // Validación del nombre
     if (!goalData.goalName.trim()) {
       newErrors.goalName = 'El nombre del objetivo es requerido';
     }
 
-    // Validación del monto objetivo
     if (!goalData.targetAmount) {
       newErrors.targetAmount = 'El monto objetivo es requerido';
     } else {
@@ -44,7 +50,6 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
       }
     }
 
-    // Validación del monto actual
     if (goalData.currentAmount) {
       const currentAmount = parseFloat(goalData.currentAmount);
       const targetAmount = parseFloat(goalData.targetAmount);
@@ -56,7 +61,6 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
       }
     }
 
-    // Validación de la fecha
     if (!goalData.targetDate) {
       newErrors.targetDate = 'La fecha objetivo es requerida';
     } else {
@@ -79,7 +83,6 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
   
     try {
       if (validateGoalForm()) {
-        // Validar y formatear la fecha
         const targetDate = new Date(goalData.targetDate);
         if (isNaN(targetDate.getTime())) {
           throw new Error('Fecha inválida');
@@ -89,14 +92,11 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
           goal_name: goalData.goalName.trim(),
           target_amount: parseFloat(goalData.targetAmount),
           current_amount: parseFloat(goalData.currentAmount || '0'),
-          target_date: targetDate.toISOString().split('T')[0] // Solo la fecha
+          target_date: targetDate.toISOString().split('T')[0]
         };
-  
-        console.log('Sending data:', savingData);
   
         const newSaving = await savingsService.create(savingData);
         
-        // Actualizar localStorage con el formato correcto
         const savedGoals = JSON.parse(localStorage.getItem('savings') || '[]');
         savedGoals.push({
           ...newSaving,
@@ -107,14 +107,12 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
         
         onAddGoal(newSaving);
         
-        // Resetear formulario
         setGoalData({
           goalName: '',
           targetAmount: '',
           currentAmount: '',
           targetDate: ''
         });
-        
       }
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -153,7 +151,7 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Monto Objetivo
+            Monto Objetivo (€)
           </label>
           <input
             type="number"
@@ -163,11 +161,16 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
             className={`w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
               errors.targetAmount ? 'border-red-500 bg-red-50' : 'border-gray-300'
             }`}
-            placeholder="Monto total a ahorrar"
+            placeholder="0 €"
             min="0"
-            step="1000"
+            step="0.01"
             disabled={isSubmitting}
           />
+          {goalData.targetAmount && (
+            <p className="mt-1 text-sm text-gray-600">
+              {formatCurrency(goalData.targetAmount)}
+            </p>
+          )}
           {errors.targetAmount && (
             <p className="mt-1 text-sm text-red-600">{errors.targetAmount}</p>
           )}
@@ -175,7 +178,7 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Monto Actual Ahorrado
+            Monto Actual Ahorrado (€)
           </label>
           <input
             type="number"
@@ -185,11 +188,16 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
             className={`w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
               errors.currentAmount ? 'border-red-500 bg-red-50' : 'border-gray-300'
             }`}
-            placeholder="Monto ya ahorrado (opcional)"
+            placeholder="0 €"
             min="0"
-            step="1000"
+            step="0.01"
             disabled={isSubmitting}
           />
+          {goalData.currentAmount && (
+            <p className="mt-1 text-sm text-gray-600">
+              {formatCurrency(goalData.currentAmount)}
+            </p>
+          )}
           {errors.currentAmount && (
             <p className="mt-1 text-sm text-red-600">{errors.currentAmount}</p>
           )}
