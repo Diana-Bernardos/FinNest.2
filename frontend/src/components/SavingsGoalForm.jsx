@@ -6,9 +6,8 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
     goalName: '',
     targetAmount: '',
     currentAmount: '',
-    targetDate: ''
+    targetDate: '',
   });
-
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -16,31 +15,29 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
     if (!value) return '';
     return new Intl.NumberFormat('es-ES', {
       style: 'currency',
-      currency: 'EUR'
+      currency: 'EUR',
     }).format(value);
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setGoalData(prev => ({
+    setGoalData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: '',
       }));
     }
   };
 
   const validateGoalForm = () => {
     const newErrors = {};
-
     if (!goalData.goalName.trim()) {
       newErrors.goalName = 'El nombre del objetivo es requerido';
     }
-
     if (!goalData.targetAmount) {
       newErrors.targetAmount = 'El monto objetivo es requerido';
     } else {
@@ -49,30 +46,25 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
         newErrors.targetAmount = 'El monto objetivo debe ser un número mayor a 0';
       }
     }
-
     if (goalData.currentAmount) {
       const currentAmount = parseFloat(goalData.currentAmount);
       const targetAmount = parseFloat(goalData.targetAmount);
-    
       if (isNaN(currentAmount) || currentAmount < 0) {
         newErrors.currentAmount = 'El monto actual debe ser un número positivo';
       } else if (!isNaN(targetAmount) && currentAmount > targetAmount) {
         newErrors.currentAmount = 'El monto actual no puede ser mayor al objetivo';
       }
     }
-
     if (!goalData.targetDate) {
       newErrors.targetDate = 'La fecha objetivo es requerida';
     } else {
       const selectedDate = new Date(goalData.targetDate);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
       if (selectedDate <= today) {
         newErrors.targetDate = 'La fecha objetivo debe ser posterior a hoy';
       }
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -80,43 +72,37 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-  
+
     try {
       if (validateGoalForm()) {
         const targetDate = new Date(goalData.targetDate);
         if (isNaN(targetDate.getTime())) {
           throw new Error('Fecha inválida');
         }
-  
+
         const savingData = {
           goal_name: goalData.goalName.trim(),
           target_amount: parseFloat(goalData.targetAmount),
           current_amount: parseFloat(goalData.currentAmount || '0'),
-          target_date: targetDate.toISOString().split('T')[0]
+          target_date: targetDate.toISOString().split('T')[0],
         };
-  
+
+        console.log('Datos enviados al servidor:', savingData);
+
         const newSaving = await savingsService.create(savingData);
-        
-        const savedGoals = JSON.parse(localStorage.getItem('savings') || '[]');
-        savedGoals.push({
-          ...newSaving,
-          synced: true,
-          target_date: targetDate.toISOString().split('T')[0]
-        });
-        localStorage.setItem('savings', JSON.stringify(savedGoals));
-        
+
         onAddGoal(newSaving);
-        
+
         setGoalData({
           goalName: '',
           targetAmount: '',
           currentAmount: '',
-          targetDate: ''
+          targetDate: '',
         });
       }
     } catch (error) {
       console.error('Error submitting form:', error);
-      alert(error.response?.data?.error || error.message || 'Error al crear la meta de ahorro');
+      alert(error.message || 'Error al crear la meta de ahorro');
     } finally {
       setIsSubmitting(false);
     }
@@ -124,15 +110,11 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">
-        Nueva Meta de Ahorro
-      </h2>
-      
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Nueva Meta de Ahorro</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Campo Nombre del Objetivo */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Nombre del Objetivo
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Nombre del Objetivo</label>
           <input
             type="text"
             name="goalName"
@@ -144,15 +126,12 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
             placeholder="Ej: Vacaciones, Casa, Auto"
             disabled={isSubmitting}
           />
-          {errors.goalName && (
-            <p className="mt-1 text-sm text-red-600">{errors.goalName}</p>
-          )}
+          {errors.goalName && <p className="mt-1 text-sm text-red-600">{errors.goalName}</p>}
         </div>
 
+        {/* Campo Monto Objetivo */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Monto Objetivo (€)
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Monto Objetivo (€)</label>
           <input
             type="number"
             name="targetAmount"
@@ -167,19 +146,14 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
             disabled={isSubmitting}
           />
           {goalData.targetAmount && (
-            <p className="mt-1 text-sm text-gray-600">
-              {formatCurrency(goalData.targetAmount)}
-            </p>
+            <p className="mt-1 text-sm text-gray-600">{formatCurrency(goalData.targetAmount)}</p>
           )}
-          {errors.targetAmount && (
-            <p className="mt-1 text-sm text-red-600">{errors.targetAmount}</p>
-          )}
+          {errors.targetAmount && <p className="mt-1 text-sm text-red-600">{errors.targetAmount}</p>}
         </div>
 
+        {/* Campo Monto Actual */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Monto Actual Ahorrado (€)
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Monto Actual Ahorrado (€)</label>
           <input
             type="number"
             name="currentAmount"
@@ -194,19 +168,14 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
             disabled={isSubmitting}
           />
           {goalData.currentAmount && (
-            <p className="mt-1 text-sm text-gray-600">
-              {formatCurrency(goalData.currentAmount)}
-            </p>
+            <p className="mt-1 text-sm text-gray-600">{formatCurrency(goalData.currentAmount)}</p>
           )}
-          {errors.currentAmount && (
-            <p className="mt-1 text-sm text-red-600">{errors.currentAmount}</p>
-          )}
+          {errors.currentAmount && <p className="mt-1 text-sm text-red-600">{errors.currentAmount}</p>}
         </div>
 
+        {/* Campo Fecha Objetivo */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Fecha Objetivo
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Fecha Objetivo</label>
           <input
             type="date"
             name="targetDate"
@@ -217,19 +186,18 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
             }`}
             disabled={isSubmitting}
           />
-          {errors.targetDate && (
-            <p className="mt-1 text-sm text-red-600">{errors.targetDate}</p>
-          )}
+          {errors.targetDate && <p className="mt-1 text-sm text-red-600">{errors.targetDate}</p>}
         </div>
 
+        {/* Botón Submit */}
         <button
           type="submit"
           disabled={isSubmitting}
-          className={`w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white
-            ${isSubmitting 
-              ? 'bg-blue-400 cursor-not-allowed' 
+          className={`w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${
+            isSubmitting
+              ? 'bg-blue-400 cursor-not-allowed'
               : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-            }`}
+          }`}
         >
           {isSubmitting ? 'Guardando...' : 'Crear Meta de Ahorro'}
         </button>

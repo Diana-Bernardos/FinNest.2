@@ -1,6 +1,7 @@
 // src/config/database.js
-const { Sequelize } = require('sequelize');
+const { Sequelize, DataTypes } = require('sequelize');
 require('dotenv').config();
+const mysql2 = require('mysql2');
 
 const sequelize = new Sequelize(
   process.env.DB_NAME || 'family_budget_db', 
@@ -24,7 +25,7 @@ const sequelize = new Sequelize(
       charset: 'utf8',
       collate: 'utf8_general_ci'
     },
-    timezone: '-03:00',
+    timezone: '+00:00',
     dialectOptions: {
       dateStrings: true,
       typeCast: true,
