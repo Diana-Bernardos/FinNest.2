@@ -46,6 +46,8 @@ app.get('/', (req, res) => {
   });
 });
 
+
+
 // Ruta de POST savings
 app.post('/api/savings', async (req, res) => {
   try {
@@ -91,6 +93,9 @@ app.post('/api/savings', async (req, res) => {
     });
   }
 });
+
+
+
 
 // Rutas de la API
 app.use('/api/expenses', expensesRoutes);

@@ -4,41 +4,22 @@ const { Op } = require('sequelize');
 
 exports.getAllExpenses = async (req, res) => {
   try {
-    const { 
-      startDate, 
-      endDate, 
-      category 
-    } = req.query;
-
-    const whereCondition = {};
-
-    if (startDate && endDate) {
-      whereCondition.date = {
-        [Op.between]: [startDate, endDate]
-      };
+    const expenses = await Expenses.findAll(); // Asegúrate de usar el modelo correcto
+    console.log('Gastos obtenidos:', expenses); // Verifica los datos aquí
+    if (!Array.isArray(expenses)) {
+      return res.status(500).json({ message: 'Error: Los datos no son un array' });
     }
-
-    if (category) {
-      whereCondition.category = category;
-    }
-
-    const expenses = await Expenses.findAll({
-      where: whereCondition,
-      order: [['date', 'DESC']]
-    });
-
-    res.json(expenses);
+    res.json({ expenses }); // Envía los datos como objeto con clave "expenses"
   } catch (error) {
-    res.status(500).json({ 
-      message: 'Error recuperando gastos', 
-      error: error.message 
-    });
+    console.error('Error obteniendo gastos:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
 
 exports.createExpense = async (req, res) => {
   try {
     const { 
+      id,
       amount, 
       category, 
       description, 
@@ -46,6 +27,7 @@ exports.createExpense = async (req, res) => {
     } = req.body;
 
     const newExpense = await Expenses.create({
+      id,
       amount,
       category,
       description,

@@ -108,7 +108,8 @@ export const expensesService = {
   getAll: async () => {
     try {
       const response = await api.get('/expenses');
-      return Array.isArray(response.data) ? response.data : [];
+      console.log('Respuesta del backend:', response.data); // Verifica la respuesta completa
+      return response.data.expenses || []; // Extrae el array `expenses`
     } catch (error) {
       console.error('Error obteniendo gastos:', error);
       return [];

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { savingsService } from '../services/api';
 
-export const SavingsGoalForm = ({ onAddGoal }) => {
+export const SavingsGoalForm = ({ onAddSavingsGoal }) => {
   const [goalData, setGoalData] = useState({
     goalName: '',
     targetAmount: '',
@@ -72,27 +72,21 @@ export const SavingsGoalForm = ({ onAddGoal }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     try {
       if (validateGoalForm()) {
         const targetDate = new Date(goalData.targetDate);
         if (isNaN(targetDate.getTime())) {
           throw new Error('Fecha inválida');
         }
-
         const savingData = {
           goal_name: goalData.goalName.trim(),
           target_amount: parseFloat(goalData.targetAmount),
           current_amount: parseFloat(goalData.currentAmount || '0'),
           target_date: targetDate.toISOString().split('T')[0],
         };
-
         console.log('Datos enviados al servidor:', savingData);
-
         const newSaving = await savingsService.create(savingData);
-
-        onAddGoal(newSaving);
-
+        onAddSavingsGoal(newSaving); // Llama a la función pasada como prop
         setGoalData({
           goalName: '',
           targetAmount: '',

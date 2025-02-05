@@ -14,13 +14,13 @@ const AIFinancialAnalysis = ({ expenses, savings }) => {
     setIsLoading(true);
     setError(null);
     setAiInsights(null);
-  
+
     try {
       const prompt = `
         Actúa como un analista financiero experto y proporciona un análisis detallado en formato JSON.
         Gastos: ${JSON.stringify(expenses, null, 2)}
         Ahorros: ${JSON.stringify(savings, null, 2)}
-  
+
         Responde exclusivamente en este formato JSON sin añadir texto antes o después:
         {
           "gastosTotales": número,
@@ -32,29 +32,31 @@ const AIFinancialAnalysis = ({ expenses, savings }) => {
           "potencialAhorro": número
         }
       `;
-  
+
       const response = await axios.post('http://localhost:11434/api/generate', {
         model: 'llama3.2:3b-instruct-q8_0',
         prompt,
         stream: false,
       });
-  
+
       if (response.status !== 200 || !response.data || !response.data.response) {
         throw new Error('Respuesta inválida de la API.');
       }
-  
-      // Limpiar la respuesta para extraer solo el JSON válido
+
       const aiText = response.data.response.trim();
+      console.log('Respuesta del modelo:', aiText);
+
       const jsonStartIndex = aiText.indexOf('{');
       const jsonEndIndex = aiText.lastIndexOf('}') + 1;
-  
+
       if (jsonStartIndex === -1 || jsonEndIndex === 0) {
         throw new Error('No se encontró un JSON válido en la respuesta.');
       }
-  
+
       const cleanJson = aiText.substring(jsonStartIndex, jsonEndIndex);
+      console.log('JSON limpio:', cleanJson);
+
       const jsonData = JSON.parse(cleanJson);
-  
       setAiInsights(extractRelevantData(jsonData));
     } catch (error) {
       console.error('Error al obtener análisis de la IA:', error);
