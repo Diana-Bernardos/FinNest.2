@@ -6,48 +6,48 @@ const { sequelize } = require('../config/database');
 const Expenses = require('../models/Expenses');
 const Savings = require('../models/Savings');
 
-analysisRouter.get('/monthly-summary', async (req, res) => {
+exports.getMonthlySummary = async (req, res) => {
   try {
-    const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
 
-    const monthlyExpenses = await sequelize.query(
-      `SELECT 
-        MONTH(date) as month, 
-        SUM(amount) as total_expenses,
-        COUNT(*) as transaction_count
-      FROM expenses
-      WHERE YEAR(date) = :year
-      GROUP BY MONTH(date)
-      ORDER BY month`,
-      {
-        replacements: { year: currentYear },
-        type: sequelize.QueryTypes.SELECT
-      }
-    );
+    // Obtener gastos mensuales
+    const monthlyExpenses = await Expenses.findAll({
+      attributes: [
+        [sequelize.fn('SUM', sequelize.col('amount')), 'totalExpenses']
+      ],
+      where: sequelize.where(sequelize.fn('MONTH', sequelize.col('date')), currentMonth)
+    });
 
-    const monthlySavings = await sequelize.query(
-      `SELECT 
-        MONTH(targetDate) as month, 
-        SUM(currentAmount) as total_savings,
-        COUNT(*) as savings_count
-      FROM savings
-      WHERE YEAR(targetDate) = :year
-      GROUP BY MONTH(targetDate)
-      ORDER BY month`,
-      {
-        replacements: { year: currentYear },
-        type: sequelize.QueryTypes.SELECT
-      }
-    );
+    // Obtener ahorros totales
+    const monthlySavings = await Savings.findAll({
+      attributes: [
+        [sequelize.fn('SUM', sequelize.col('current_amount')), 'totalSavings']
+      ]
+    });
 
+    // Obtener desglose por categoría
+    const categorySummary = await Expenses.findAll({
+      attributes: [
+        'category',
+        [sequelize.fn('SUM', sequelize.col('amount')), 'totalAmount']
+      ],
+      where: sequelize.where(sequelize.fn('MONTH', sequelize.col('date')), currentMonth),
+      group: ['category']
+    });
+
+    // Construir respuesta JSON
     res.json({
-      monthlyExpenses,
-      monthlySavings
+      monthlyExpenses: monthlyExpenses[0]?.get('totalExpenses') || 0,
+      monthlySavings: monthlySavings[0]?.get('totalSavings') || 0,
+      categoryBreakdown: categorySummary.map(item => ({
+        category: item.get('category'),
+        totalAmount: item.get('totalAmount')
+      }))
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error en análisis mensual', error: error.message });
+    console.error('Error obteniendo análisis mensual:', error);
+    res.status(500).json({ message: 'Error interno del servidor', error: error.message });
   }
-});
+};
 
 module.exports = analysisRouter;

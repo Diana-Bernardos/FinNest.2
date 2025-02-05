@@ -136,24 +136,28 @@ export const expensesService = {
 };
 // Servicios de Análisis
 export const analysisService = {
-  // Obtener resumen mensual
   getMonthlySummary: async () => {
     try {
       const response = await api.get('/analysis/monthly-summary');
-      return response.data;
+      if (!response.data) {
+        throw new Error('La respuesta del servidor no contiene datos.');
+      }
+      return response.data; // Devuelve los datos JSON
     } catch (error) {
       console.error('Error obteniendo resumen mensual:', error);
-      throw error;
+      throw new Error('No se pudo obtener el resumen mensual.');
     }
   },
-  // Obtener análisis por categoría
   getCategoryBreakdown: async () => {
     try {
       const response = await api.get('/expenses/analysis/by-category');
-      return response.data;
+      if (!response.data) {
+        throw new Error('La respuesta del servidor no contiene datos.');
+      }
+      return response.data; // Devuelve los datos JSON
     } catch (error) {
-      console.error('Error obteniendo análisis por categoría:', error);
-      throw error;
+      console.error('Error obteniendo desglose por categoría:', error);
+      throw new Error('No se pudo obtener el desglose por categoría.');
     }
   }
 };

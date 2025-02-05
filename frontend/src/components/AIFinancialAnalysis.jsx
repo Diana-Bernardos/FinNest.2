@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, } from 'react';
 import axios from 'axios';
 
-const AIFinancialAnalysis = ({ expenses, savings }) => {
+const AIFinancialAnalysis = ({ expenses = [], savings = [] }) => {
   const [aiInsights, setAiInsights] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const fetchAIAnalysis = async () => {
-    if (expenses.length === 0 || savings.length === 0) {
+    if (!Array.isArray(expenses) || !Array.isArray(savings)) {
+      setError('Los datos de gastos o ahorros no son válidos.');
+      return;
+    }
+
+    if (expenses.length === 0 && savings.length === 0) {
       setError('No hay suficientes datos para realizar el análisis.');
       return;
     }
+
     setIsLoading(true);
     setError(null);
     setAiInsights(null);
@@ -20,7 +26,6 @@ const AIFinancialAnalysis = ({ expenses, savings }) => {
         Actúa como un analista financiero experto y proporciona un análisis detallado en formato JSON.
         Gastos: ${JSON.stringify(expenses, null, 2)}
         Ahorros: ${JSON.stringify(savings, null, 2)}
-
         Responde exclusivamente en este formato JSON sin añadir texto antes o después:
         {
           "gastosTotales": número,
@@ -44,8 +49,9 @@ const AIFinancialAnalysis = ({ expenses, savings }) => {
       }
 
       const aiText = response.data.response.trim();
-      console.log('Respuesta del modelo:', aiText);
+      console.log('Texto bruto del modelo:', aiText);
 
+      // Extraer el JSON válido de la respuesta
       const jsonStartIndex = aiText.indexOf('{');
       const jsonEndIndex = aiText.lastIndexOf('}') + 1;
 
@@ -71,8 +77,12 @@ const AIFinancialAnalysis = ({ expenses, savings }) => {
     ahorrosTotales: jsonData.ahorrosTotales || 0,
     analisisGastos: jsonData.analisisGastos || 'Sin análisis disponible',
     progresoAhorros: jsonData.progresoAhorros || 'Sin progreso disponible',
-    recomendaciones: jsonData.recomendaciones || ['Sin recomendaciones disponibles'],
-    categoriasMayorGasto: jsonData.categoriasMayorGasto || ['Sin categorías disponibles'],
+    recomendaciones: Array.isArray(jsonData.recomendaciones)
+      ? jsonData.recomendaciones
+      : ['Sin recomendaciones disponibles'],
+    categoriasMayorGasto: Array.isArray(jsonData.categoriasMayorGasto)
+      ? jsonData.categoriasMayorGasto
+      : ['Sin categorías disponibles'],
     potencialAhorro: jsonData.potencialAhorro || 0,
   });
 
@@ -87,12 +97,38 @@ const AIFinancialAnalysis = ({ expenses, savings }) => {
       >
         {isLoading ? 'Analizando...' : 'Obtener Análisis'}
       </button>
+  
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">{error}</div>
       )}
+  
       {aiInsights && (
         <div className="space-y-4">
-          {/* Mostrar resultados aquí */}
+          <p>
+            <strong>Análisis de Gastos:</strong> {aiInsights.analisisGastos}
+          </p>
+          <p>
+            <strong>Progreso de Ahorros:</strong> {aiInsights.progresoAhorros}
+          </p>
+          <p>
+            <strong>Potencial Ahorro:</strong>{' '}
+            {aiInsights.potencialAhorro.toLocaleString('es-ES', {
+              style: 'currency',
+              currency: 'EUR',
+            })}
+          </p>
+          <p>
+            <strong>Categorías con Mayor Gasto:</strong>{' '}
+            {aiInsights.categoriasMayorGasto.join(', ')}
+          </p>
+          <p>
+            <strong>Recomendaciones:</strong>
+            <ul className="list-disc list-inside">
+              {aiInsights.recomendaciones.map((rec, index) => (
+                <li key={index}>{rec}</li> 
+              ))}
+            </ul>
+          </p>
         </div>
       )}
     </div>

@@ -113,12 +113,18 @@ const OverviewPage = ({ expenses = [], savings = [] }) => {
       {/* Análisis Financiero IA */}
       <div className="col-span-1 md:col-span-2 lg:col-span-3 w-full bg-gradient-to-r from-pink-500 to-red-500 p-4 rounded-lg shadow-md text-white">
         <h3 className="text-lg font-bold mb-4">Análisis Financiero</h3>
+        Análisis Financiero
         {aiInsights && (
           <div>
             <p>Análisis de Gastos: {aiInsights.analisisGastos}</p>
             <p>Progreso de Ahorros: {aiInsights.progresoAhorros}</p>
-            <p>Potencial Ahorro: {aiInsights.potencialAhorro.toFixed(2)} EUR</p>
-            <p>Categorías con Mayor Gasto: {aiInsights.categoriasMayorGasto.join(", ")}</p>
+            <p>
+              Potencial Ahorro: {aiInsights.potencialAhorro.toFixed(2)} EUR
+            </p>
+            <p>
+              Categorías con Mayor Gasto:{" "}
+              {aiInsights.categoriasMayorGasto.join(", ")}
+            </p>
             <p>Recomendaciones:</p>
             <ul>
               {aiInsights.recomendaciones.map((rec, index) => (
@@ -234,6 +240,7 @@ const App = () => {
     }
   }, []);
   // Cargar datos al iniciar la aplicación
+  // Cargar datos al iniciar la aplicación
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -243,15 +250,19 @@ const App = () => {
           savingsService.getAll(),
           expensesService.getAll(),
         ]);
-  
         console.log("Datos de ahorros obtenidos:", savingsData);
         console.log("Datos de gastos obtenidos:", expensesData);
-  
+
         if (!Array.isArray(expensesData)) {
           console.error("Los datos de gastos no son un array:", expensesData);
           expensesData = [];
         }
-  
+
+        if (!Array.isArray(savingsData)) {
+          console.error("Los datos de ahorros no son un array:", savingsData);
+          savingsData = [];
+        }
+
         const transformedExpenses = expensesData.map((expense) => ({
           id: expense.id,
           date: new Date(expense.date).toISOString().split('T')[0],
@@ -260,7 +271,7 @@ const App = () => {
           description: String(expense.description || '').trim(),
           synced: true,
         }));
-  
+
         setSavings(savingsData || []);
         setExpenses(transformedExpenses || []);
       } catch (error) {
@@ -272,6 +283,7 @@ const App = () => {
     };
     fetchData();
   }, []);
+
   // Detectar cuando el dispositivo está en línea
   useEffect(() => {
     const handleOnline = () => {
@@ -315,8 +327,8 @@ const App = () => {
         icon: Icons.Analysis,
         title: 'Análisis',
         color: 'bg-gradient-to-r from-purple-500 to-indigo-600',
-        component: () => <AIFinancialAnalysis expenses={expenses} savings={savings} />,
-      },
+        component: () => <AIFinancialAnalysis expenses={expenses} savings={savings} />, 
+    },
       {
         id: 'settings',
         icon: Icons.Settings,
