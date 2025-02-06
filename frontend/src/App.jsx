@@ -4,6 +4,7 @@ import ExpenseDistribution from './components/ExpenseDistribution';
 import ExpenseForm from './components/ExpenseForm';
 import { SavingsGoalForm } from './components/SavingsGoalForm';
 import AIFinancialAnalysis from './components/AIFinancialAnalysis';
+import AppTour from './components/AppTour';
 import { savingsService, expensesService } from './services/api';
 
 // Componentes de los iconos
@@ -17,8 +18,8 @@ const Icons = {
 
 // Componente de Overview
 const OverviewPage = ({ expenses = [], savings = [] }) => {
-  // Estados locales
   const [aiInsights, setAiInsights] = useState(null);
+  
   const validExpenses = Array.isArray(expenses) ? expenses.map(exp => ({
     category: exp.category || '',
     amount: parseFloat(exp.amount) || 0
@@ -28,40 +29,26 @@ const OverviewPage = ({ expenses = [], savings = [] }) => {
     month: new Date(sav.target_date).toLocaleString('default', { month: 'long' }),
     amount: parseFloat(sav.current_amount) || 0
   })) : [];
-  
-  // Y luego en el render:
-  <AIFinancialAnalysis 
-    expenses={validExpenses} 
-    savings={validSavings} 
-  />
 
   useEffect(() => {
-    // Simular el análisis de la IA con los datos actuales
     const insights = {
       gastosTotales: expenses.reduce((acc, exp) => acc + parseFloat(exp.amount || 0), 0),
       ahorrosTotales: savings.reduce((acc, sav) => acc + parseFloat(sav.current_amount || 0), 0),
       analisisGastos: "Los gastos se distribuyen según las categorías establecidas. ",
       progresoAhorros: "El progreso de ahorros está alineado con las metas establecidas.",
-      recomendaciones: [
-        "Mantén un registro detallado de gastos diarios",
-        
-      ],
+      recomendaciones: ["Mantén un registro detallado de gastos diarios"],
       categoriasMayorGasto: [...new Set(expenses.map((exp) => exp.category))],
-      potencialAhorro:
-        expenses.reduce((acc, exp) => acc + parseFloat(exp.amount || 0), 0) * 0.2,
+      potencialAhorro: expenses.reduce((acc, exp) => acc + parseFloat(exp.amount || 0), 0) * 0.2,
     };
     setAiInsights(insights);
   }, [expenses, savings]);
 
   const totalSavings = useMemo(() => {
     return savings.reduce(
-      (acc, goal) =>
-        acc +
-        parseFloat(goal.currentAmount || goal.current_amount || 0),
+      (acc, goal) => acc + parseFloat(goal.currentAmount || goal.current_amount || 0),
       0
     );
   }, [savings]);
-  
 
   const monthlyExpenses = useMemo(() => {
     if (!Array.isArray(expenses)) return 0;
@@ -80,14 +67,13 @@ const OverviewPage = ({ expenses = [], savings = [] }) => {
       })
       .reduce((acc, expense) => acc + parseFloat(expense.amount || 0), 0);
   }, [expenses]);
+
   return (
     <div className="p-4 space-y-6">
       <h2 className="text-xl font-bold text-center">Resumen</h2>
 
-      {/* Contenedor principal para las tarjetas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Tarjeta de Gastos Mensuales */}
-        <div className="w-full bg-gradient-to-r from-green-400 to-emerald-500 p-4 rounded-lg shadow-md text-white flex flex-col justify-between">
+        <div className="w-full bg-gradient-to-r from-green-400 to-emerald-500 p-4 rounded-lg shadow-md text-white flex flex-col justify-between overview-section">
           <p className="font-semibold text-sm">Gastos Mensuales</p>
           <p className="text-2xl font-bold">
             {monthlyExpenses.toLocaleString('es-ES', {
@@ -98,7 +84,6 @@ const OverviewPage = ({ expenses = [], savings = [] }) => {
           <span className="text-3xl">💳</span>
         </div>
 
-        {/* Tarjeta de Total Ahorrado */}
         <div className="w-full bg-gradient-to-r from-blue-500 to-teal-400 p-4 rounded-lg shadow-md text-white flex flex-col justify-between">
           <p className="font-semibold text-sm">Total Ahorrado</p>
           <p className="text-2xl font-bold">
@@ -110,7 +95,6 @@ const OverviewPage = ({ expenses = [], savings = [] }) => {
           <span className="text-3xl">💰</span>
         </div>
 
-        {/* Tarjeta de Metas de Ahorro */}
         <div className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 p-4 rounded-lg shadow-md text-white flex flex-col justify-between">
           <p className="font-semibold text-sm">Metas de Ahorro</p>
           <p className="text-2xl font-bold">{savings.length} metas activas</p>
@@ -118,16 +102,13 @@ const OverviewPage = ({ expenses = [], savings = [] }) => {
         </div>
       </div>
 
-      {/* Gráfica de Distribución de Gastos */}
       <div className="col-span-1 md:col-span-2 lg:col-span-3 w-full bg-gradient-to-r from-yellow-400 to-orange-500 p-4 rounded-lg shadow-md text-white">
         <h3 className="text-lg font-bold mb-4">Distribución de Gastos</h3>
         <ExpenseDistribution expenses={expenses} />
       </div>
 
-      {/* Análisis Financiero IA */}
       <div className="col-span-1 md:col-span-2 lg:col-span-3 w-full bg-gradient-to-r from-pink-500 to-red-500 p-4 rounded-lg shadow-md text-white">
         <h3 className="text-lg font-bold mb-4">Análisis Financiero</h3>
-        Análisis Financiero
         {aiInsights && (
           <div>
             <p>Análisis de Gastos: {aiInsights.analisisGastos}</p>
@@ -140,27 +121,45 @@ const OverviewPage = ({ expenses = [], savings = [] }) => {
               {aiInsights.categoriasMayorGasto.join(", ")}
             </p>
             <p>Recomendaciones:</p>
-            <ul>
+            <div className="space-y-2">
               {aiInsights.recomendaciones.map((rec, index) => (
-                <li key={index}>{rec}</li>
+                <div key={index} className="flex items-start">
+                  <span className="mr-2">•</span>
+                  <span>{rec}</span>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         )}
-        <AIFinancialAnalysis expenses={expenses} savings={savings} />
+        <AIFinancialAnalysis expenses={validExpenses} savings={validSavings} />
       </div>
     </div>
   );
 };
 
 // Componente de Configuración
-const SettingsPage = () => (
-  <div className="p-4 space-y-4">
-    <h2 className="text-xl font-bold">Configuraciones</h2>
-    <p>Preferencias</p>
-    <p>Próximamente más configuraciones</p>
-  </div>
-);
+const SettingsPage = () => {
+  const handleResetTour = () => {
+    localStorage.removeItem('tourCompleted');
+    window.location.reload();
+  };
+
+  return (
+    <div className="p-4 space-y-4">
+      <h2 className="text-xl font-bold">Configuraciones</h2>
+      <div className="space-y-4">
+        <button
+          onClick={handleResetTour}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Reiniciar Tour de Bienvenida
+        </button>
+        <p>Preferencias</p>
+        <p>Próximamente más configuraciones</p>
+      </div>
+    </div>
+  );
+};
 
 // Componente Principal
 const App = () => {
@@ -170,7 +169,6 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Cargar datos al iniciar la aplicación
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -180,10 +178,30 @@ const App = () => {
           savingsService.getAll(),
           expensesService.getAll(),
         ]);
+        console.log("Datos de ahorros obtenidos:", savingsData);
+        console.log("Datos de gastos obtenidos:", expensesData);
+
+        if (!Array.isArray(expensesData)) {
+          console.error("Los datos de gastos no son un array:", expensesData);
+          expensesData = [];
+        }
+
+        if (!Array.isArray(savingsData)) {
+          console.error("Los datos de ahorros no son un array:", savingsData);
+          savingsData = [];
+        }
+
+        const transformedExpenses = expensesData.map((expense) => ({
+          id: expense.id,
+          date: new Date(expense.date).toISOString().split('T')[0],
+          amount: parseFloat(expense.amount),
+          category: String(expense.category).trim(),
+          description: String(expense.description || '').trim(),
+          synced: true,
+        }));
+
         setSavings(savingsData || []);
-        setExpenses(expensesData || []);
-
-
+        setExpenses(transformedExpenses || []);
       } catch (error) {
         console.error('Error cargando datos:', error);
         setError(error.response?.data?.message || 'Error al cargar datos del servidor');
@@ -194,8 +212,6 @@ const App = () => {
     fetchData();
   }, []);
 
-
-  // Sincronización de datos pendientes
   const syncPendingData = useCallback(async () => {
     try {
       const pendingExpenses = expenses.filter((exp) => !exp.synced);
@@ -234,7 +250,6 @@ const App = () => {
     }
   }, []);
 
-  // Agregar una nueva meta de ahorro
   const handleAddSavingsGoal = useCallback(async (goalData) => {
     try {
       const targetDate = new Date(goalData.targetDate);
@@ -253,52 +268,7 @@ const App = () => {
       throw error;
     }
   }, []);
-  
-  // Cargar datos al iniciar la aplicación
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [savingsData, expensesData] = await Promise.all([
-          savingsService.getAll(),
-          expensesService.getAll(),
-        ]);
-        console.log("Datos de ahorros obtenidos:", savingsData);
-        console.log("Datos de gastos obtenidos:", expensesData);
-  
-        if (!Array.isArray(expensesData)) {
-          console.error("Los datos de gastos no son un array:", expensesData);
-          expensesData = [];
-        }
-  
-        if (!Array.isArray(savingsData)) {
-          console.error("Los datos de ahorros no son un array:", savingsData);
-          savingsData = [];
-        }
-  
-        const transformedExpenses = expensesData.map((expense) => ({
-          id: expense.id,
-          date: new Date(expense.date).toISOString().split('T')[0],
-          amount: parseFloat(expense.amount),
-          category: String(expense.category).trim(),
-          description: String(expense.description || '').trim(),
-          synced: true,
-        }));
-  
-        setSavings(savingsData || []);
-        setExpenses(transformedExpenses || []);
-      } catch (error) {
-        console.error('Error cargando datos:', error);
-        setError(error.response?.data?.message || 'Error al cargar datos del servidor');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
 
-  // Detectar cuando el dispositivo está en línea
   useEffect(() => {
     const handleOnline = () => {
       const hasPendingData = expenses.some((item) => !item.synced);
@@ -310,13 +280,13 @@ const App = () => {
     return () => window.removeEventListener('online', handleOnline);
   }, [expenses, syncPendingData]);
 
-  // Definir las secciones del menú
   const sections = useMemo(
     () => [
       {
         id: 'overview',
         icon: Icons.Home,
         title: 'Resumen',
+        className: 'overview-section',
         color: 'bg-gradient-to-r from-blue-500 to-teal-400',
         component: () => <OverviewPage expenses={expenses} savings={savings} />,
       },
@@ -324,6 +294,7 @@ const App = () => {
         id: 'savings',
         icon: Icons.Savings,
         title: 'Ahorros',
+        className: 'savings-section',
         color: 'bg-gradient-to-r from-green-400 to-emerald-500',
         component: () => (
           <SavingsGoalForm onAddSavingsGoal={handleAddSavingsGoal} />
@@ -333,6 +304,7 @@ const App = () => {
         id: 'expenses',
         icon: Icons.Expenses,
         title: 'Gastos',
+        className: 'expenses-section',
         color: 'bg-gradient-to-r from-yellow-400 to-orange-500',
         component: () => <ExpenseForm onAddExpense={handleAddExpense} />,
       },
@@ -340,6 +312,7 @@ const App = () => {
         id: 'analysis',
         icon: Icons.Analysis,
         title: 'Análisis',
+        className: 'ai-analysis-section',
         color: 'bg-gradient-to-r from-purple-500 to-indigo-600',
         component: () => (
           <AIFinancialAnalysis expenses={expenses} savings={savings} />
@@ -349,6 +322,7 @@ const App = () => {
         id: 'settings',
         icon: Icons.Settings,
         title: 'Configuración',
+        className: 'settings-section',
         color: 'bg-gradient-to-r from-gray-400 to-gray-600',
         component: SettingsPage,
       },
@@ -358,13 +332,15 @@ const App = () => {
 
   return (
     <div className="flex h-screen">
-      {/* Menú de Navegación */}
+      <AppTour />
       <nav className="w-64 bg-gradient-to-b from-gray-700 to-gray-900 text-white flex-shrink-0 p-4 space-y-4">
         {sections.map((section) => (
           <button
             key={section.id}
             onClick={() => setActiveSection(section.id)}
             className={`p-2 rounded-lg transition-all duration-200 ease-in-out hover:shadow-md focus:outline-none flex items-center ${
+              section.className
+            } ${
               activeSection === section.id
                 ? `${section.color} text-white`
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -376,7 +352,6 @@ const App = () => {
         ))}
       </nav>
 
-      {/* Contenido Principal */}
       <main className="flex-grow p-6 overflow-y-auto">
         {error && <p className="text-red-500">{error}</p>}
         {isLoading ? (
