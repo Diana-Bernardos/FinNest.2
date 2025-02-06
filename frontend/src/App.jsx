@@ -19,18 +19,32 @@ const Icons = {
 const OverviewPage = ({ expenses = [], savings = [] }) => {
   // Estados locales
   const [aiInsights, setAiInsights] = useState(null);
+  const validExpenses = Array.isArray(expenses) ? expenses.map(exp => ({
+    category: exp.category || '',
+    amount: parseFloat(exp.amount) || 0
+  })) : [];
+  
+  const validSavings = Array.isArray(savings) ? savings.map(sav => ({
+    month: new Date(sav.target_date).toLocaleString('default', { month: 'long' }),
+    amount: parseFloat(sav.current_amount) || 0
+  })) : [];
+  
+  // Y luego en el render:
+  <AIFinancialAnalysis 
+    expenses={validExpenses} 
+    savings={validSavings} 
+  />
 
   useEffect(() => {
     // Simular el análisis de la IA con los datos actuales
     const insights = {
       gastosTotales: expenses.reduce((acc, exp) => acc + parseFloat(exp.amount || 0), 0),
       ahorrosTotales: savings.reduce((acc, sav) => acc + parseFloat(sav.current_amount || 0), 0),
-      analisisGastos: "Los gastos se distribuyen según las categorías establecidas. Revisa periódicamente para mantener un control efectivo.",
+      analisisGastos: "Los gastos se distribuyen según las categorías establecidas. ",
       progresoAhorros: "El progreso de ahorros está alineado con las metas establecidas.",
       recomendaciones: [
         "Mantén un registro detallado de gastos diarios",
-        "Establece límites por categoría",
-        "Revisa mensualmente tus metas de ahorro"
+        
       ],
       categoriasMayorGasto: [...new Set(expenses.map((exp) => exp.category))],
       potencialAhorro:
@@ -239,7 +253,7 @@ const App = () => {
       throw error;
     }
   }, []);
-  // Cargar datos al iniciar la aplicación
+  
   // Cargar datos al iniciar la aplicación
   useEffect(() => {
     const fetchData = async () => {
@@ -252,17 +266,17 @@ const App = () => {
         ]);
         console.log("Datos de ahorros obtenidos:", savingsData);
         console.log("Datos de gastos obtenidos:", expensesData);
-
+  
         if (!Array.isArray(expensesData)) {
           console.error("Los datos de gastos no son un array:", expensesData);
           expensesData = [];
         }
-
+  
         if (!Array.isArray(savingsData)) {
           console.error("Los datos de ahorros no son un array:", savingsData);
           savingsData = [];
         }
-
+  
         const transformedExpenses = expensesData.map((expense) => ({
           id: expense.id,
           date: new Date(expense.date).toISOString().split('T')[0],
@@ -271,7 +285,7 @@ const App = () => {
           description: String(expense.description || '').trim(),
           synced: true,
         }));
-
+  
         setSavings(savingsData || []);
         setExpenses(transformedExpenses || []);
       } catch (error) {
@@ -327,8 +341,10 @@ const App = () => {
         icon: Icons.Analysis,
         title: 'Análisis',
         color: 'bg-gradient-to-r from-purple-500 to-indigo-600',
-        component: () => <AIFinancialAnalysis expenses={expenses} savings={savings} />, 
-    },
+        component: () => (
+          <AIFinancialAnalysis expenses={expenses} savings={savings} />
+        ),
+      },
       {
         id: 'settings',
         icon: Icons.Settings,

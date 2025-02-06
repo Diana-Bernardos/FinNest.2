@@ -43,9 +43,14 @@ export const savingsService = {
   getAll: async () => {
     try {
       const response = await api.get('/savings');
-      return response.data.savings || [];
+      if (!response.data || !response.data.savings) {
+        throw new Error('La respuesta del backend no contiene datos válidos.');
+      }
+      return Array.isArray(response.data.savings)
+        ? response.data.savings
+        : [];
     } catch (error) {
-      console.error('Error fetching savings:', error);
+      console.error('Error obteniendo ahorros:', error);
       return [];
     }
   },
@@ -108,8 +113,12 @@ export const expensesService = {
   getAll: async () => {
     try {
       const response = await api.get('/expenses');
-      console.log('Respuesta del backend:', response.data); // Verifica la respuesta completa
-      return response.data.expenses || []; // Extrae el array `expenses`
+      if (!response.data || !response.data.expenses) {
+        throw new Error('La respuesta del backend no contiene datos válidos.');
+      }
+      return Array.isArray(response.data.expenses)
+        ? response.data.expenses
+        : [];
     } catch (error) {
       console.error('Error obteniendo gastos:', error);
       return [];

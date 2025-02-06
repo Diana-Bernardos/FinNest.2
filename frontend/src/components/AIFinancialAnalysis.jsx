@@ -1,4 +1,4 @@
-import React, { useState, } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 
 const AIFinancialAnalysis = ({ expenses = [], savings = [] }) => {
@@ -51,18 +51,22 @@ const AIFinancialAnalysis = ({ expenses = [], savings = [] }) => {
       const aiText = response.data.response.trim();
       console.log('Texto bruto del modelo:', aiText);
 
-      // Extraer el JSON válido de la respuesta
-      const jsonStartIndex = aiText.indexOf('{');
-      const jsonEndIndex = aiText.lastIndexOf('}') + 1;
+      let jsonData;
+      try {
+        jsonData = JSON.parse(aiText);
+        console.log('JSON válido encontrado:', jsonData);
+      } catch (parseError) {
+        const jsonStartIndex = aiText.indexOf('{');
+        const jsonEndIndex = aiText.lastIndexOf('}') + 1;
 
-      if (jsonStartIndex === -1 || jsonEndIndex === 0) {
-        throw new Error('No se encontró un JSON válido en la respuesta.');
+        if (jsonStartIndex === -1 || jsonEndIndex === 0) {
+          throw new Error('No se encontró un JSON válido en la respuesta.');
+        }
+
+        const cleanJson = aiText.substring(jsonStartIndex, jsonEndIndex);
+        jsonData = JSON.parse(cleanJson);
       }
 
-      const cleanJson = aiText.substring(jsonStartIndex, jsonEndIndex);
-      console.log('JSON limpio:', cleanJson);
-
-      const jsonData = JSON.parse(cleanJson);
       setAiInsights(extractRelevantData(jsonData));
     } catch (error) {
       console.error('Error al obtener análisis de la IA:', error);
@@ -97,38 +101,55 @@ const AIFinancialAnalysis = ({ expenses = [], savings = [] }) => {
       >
         {isLoading ? 'Analizando...' : 'Obtener Análisis'}
       </button>
-  
+
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">{error}</div>
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          {error}
+        </div>
       )}
-  
+
       {aiInsights && (
         <div className="space-y-4">
-          <p>
-            <strong>Análisis de Gastos:</strong> {aiInsights.analisisGastos}
-          </p>
-          <p>
-            <strong>Progreso de Ahorros:</strong> {aiInsights.progresoAhorros}
-          </p>
-          <p>
-            <strong>Potencial Ahorro:</strong>{' '}
-            {aiInsights.potencialAhorro.toLocaleString('es-ES', {
-              style: 'currency',
-              currency: 'EUR',
-            })}
-          </p>
-          <p>
-            <strong>Categorías con Mayor Gasto:</strong>{' '}
-            {aiInsights.categoriasMayorGasto.join(', ')}
-          </p>
-          <p>
-            <strong>Recomendaciones:</strong>
-            <ul className="list-disc list-inside">
-              {aiInsights.recomendaciones.map((rec, index) => (
-                <li key={index}>{rec}</li> 
-              ))}
-            </ul>
-          </p>
+          <div className="grid gap-4">
+            <div className="border-b pb-2">
+              <div className="font-semibold mb-1">Análisis de Gastos</div>
+              <div className="text-gray-700">{aiInsights.analisisGastos}</div>
+            </div>
+
+            <div className="border-b pb-2">
+              <div className="font-semibold mb-1">Progreso de Ahorros</div>
+              <div className="text-gray-700">{aiInsights.progresoAhorros}</div>
+            </div>
+
+            <div className="border-b pb-2">
+              <div className="font-semibold mb-1">Potencial Ahorro</div>
+              <div className="text-gray-700">
+                {aiInsights.potencialAhorro.toLocaleString('es-ES', {
+                  style: 'currency',
+                  currency: 'EUR',
+                })}
+              </div>
+            </div>
+
+            <div className="border-b pb-2">
+              <div className="font-semibold mb-1">Categorías con Mayor Gasto</div>
+              <div className="text-gray-700">
+                {aiInsights.categoriasMayorGasto.join(', ')}
+              </div>
+            </div>
+
+            <div>
+              <div className="font-semibold mb-2">Recomendaciones</div>
+              <div className="space-y-2">
+                {aiInsights.recomendaciones.map((rec, index) => (
+                  <div key={index} className="flex gap-2 text-gray-700">
+                    <span>•</span>
+                    <div>{rec}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
