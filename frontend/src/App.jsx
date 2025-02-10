@@ -252,20 +252,32 @@ const App = () => {
 
   const handleAddSavingsGoal = useCallback(async (goalData) => {
     try {
+      if (!goalData.goalName || !goalData.targetAmount || !goalData.targetDate) {
+        throw new Error('Todos los campos son requeridos');
+      }
+  
       const targetDate = new Date(goalData.targetDate);
+      if (isNaN(targetDate.getTime())) {
+        throw new Error('La fecha seleccionada no es válida');
+      }
+  
       const targetAmount = parseFloat(goalData.targetAmount);
-      const currentAmount = parseFloat(goalData.currentAmount || 0);
+      if (isNaN(targetAmount) || targetAmount <= 0) {
+        throw new Error('El monto objetivo debe ser un número positivo');
+      }
+  
       const newSavingsGoal = await savingsService.create({
         goal_name: goalData.goalName.trim(),
         target_amount: targetAmount,
-        current_amount: currentAmount,
+        current_amount: parseFloat(goalData.currentAmount || 0),
         target_date: targetDate.toISOString().split('T')[0],
       });
+  
       setSavings((prev) => [...prev, newSavingsGoal]);
       return newSavingsGoal;
     } catch (error) {
       console.error('Error agregando meta de ahorro:', error);
-      throw error;
+      throw error; // Re-lanzar el error para que sea manejado por el formulario
     }
   }, []);
 

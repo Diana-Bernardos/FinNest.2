@@ -74,24 +74,24 @@ export const SavingsGoalForm = ({ onAddSavingsGoal }) => {
     setIsSubmitting(true);
     try {
       if (validateGoalForm()) {
-        const targetDate = new Date(goalData.targetDate);
-        if (isNaN(targetDate.getTime())) {
-          throw new Error('Fecha inválida');
-        }
+        const formattedDate = new Date(goalData.targetDate).toISOString().split('T')[0];
+        
         const savingData = {
           goal_name: goalData.goalName.trim(),
           target_amount: parseFloat(goalData.targetAmount),
           current_amount: parseFloat(goalData.currentAmount || '0'),
-          target_date: targetDate.toISOString().split('T')[0],
+          target_date: formattedDate
         };
+        
         console.log('Datos enviados al servidor:', savingData);
         const newSaving = await savingsService.create(savingData);
-        onAddSavingsGoal(newSaving); // Llama a la función pasada como prop
+        onAddSavingsGoal(newSaving);
+        
         setGoalData({
           goalName: '',
           targetAmount: '',
           currentAmount: '',
-          targetDate: '',
+          targetDate: ''
         });
       }
     } catch (error) {
@@ -101,7 +101,6 @@ export const SavingsGoalForm = ({ onAddSavingsGoal }) => {
       setIsSubmitting(false);
     }
   };
-
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">Nueva Meta de Ahorro</h2>
